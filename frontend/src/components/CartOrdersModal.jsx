@@ -8,6 +8,10 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab); // Use initialTab prop
+  // Update activeTab when parent changes initialTab (e.g., after checkout)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   const [loading, setLoading] = useState(false);
   const [userOrders, setUserOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -62,10 +66,11 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
   // Fetch user orders when orders tab is active
   useEffect(() => {
     const fetchUserOrders = async () => {
-      if (activeTab === 'orders' && user?._id) {
+      const vendorId = user?._id || user?.id;
+      if (activeTab === 'orders' && vendorId) {
         setOrdersLoading(true);
         try {
-          const orders = await orderAPI.getVendorOrders(user._id);
+          const orders = await orderAPI.getVendorOrders(vendorId);
           setUserOrders(orders);
           
           // Fetch product details for all items in orders
@@ -95,7 +100,7 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     };
 
     fetchUserOrders();
-  }, [activeTab, user?._id]);
+  }, [activeTab, user]);
 
   // Handler for placing order
   const handlePlaceOrder = async () => {
@@ -108,7 +113,7 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
         return '507f1f77bcf86cd799439011'; // Valid demo ObjectId
       };
       
-      const vendorId = user?._id || user?.vendorId || generateObjectId();
+  const vendorId = user?._id || user?.id || user?.vendorId || generateObjectId();
       
       // Validate that vendorId is a valid ObjectId format (24 hex characters)
       const objectIdRegex = /^[0-9a-fA-F]{24}$/;
@@ -131,20 +136,36 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
       
       // Create separate orders for each supplier
       const orderPromises = Object.entries(itemsBySupplier).map(async ([supplierId, supplierItems]) => {
+        // Normalize ids and prices before sending to backend
+        const itemsPayload = supplierItems.map(item => {
+          const productId = item._id || item.id || (item.productId && (item.productId._id || item.productId));
+          const supplierIdForItem = item.supplierId || item.supplier?._id || item.supplier;
+          let unitPrice = item.unitPrice ?? item.price;
+          if (typeof unitPrice === 'string') {
+            unitPrice = Number(unitPrice.toString().replace(/[^0-9.-]+/g, '')) || 0;
+          }
+          return {
+            productId,
+            supplierId: supplierIdForItem,
+            quantity: item.quantity,
+            unitPrice,
+          };
+        });
+
         const orderData = {
           vendorId: finalVendorId,
           supplierId,
-          items: supplierItems.map(item => ({
-            productId: item.id,
-            supplierId: item.supplierId, // Add supplierId for each item
-            quantity: item.quantity,
-            unitPrice: item.price
-          })),
+          items: itemsPayload,
           deliveryType: 'pickup', // You can make this dynamic if needed
         };
-        
-        return orderAPI.placeOrder(orderData);
-      });
+
+        try {
+          return await orderAPI.placeOrder(orderData);
+        } catch (err) {
+          console.error('Failed placing order for supplier', supplierId, { orderData, err });
+          throw err;
+        }
+  });
       
       // Wait for all orders to be placed
       const results = await Promise.all(orderPromises);
@@ -163,10 +184,13 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
       setLoading(false);
       
       // Refresh orders after successful placement
-      if (user?._id) {
+      if (user) {
         try {
-          const orders = await orderAPI.getVendorOrders(user._id);
-          setUserOrders(orders);
+          const vendorIdRefresh = user._id || user.id || user.vendorId;
+          if (vendorIdRefresh) {
+            const orders = await orderAPI.getVendorOrders(vendorIdRefresh);
+            setUserOrders(orders);
+          }
           
           // Fetch product details for new orders
           const productIds = new Set();

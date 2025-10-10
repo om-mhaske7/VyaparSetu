@@ -46,15 +46,26 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
       
       // Create separate orders for each supplier
       const orderPromises = Object.entries(itemsBySupplier).map(async ([supplierId, supplierItems]) => {
+        // Normalize ids and prices: backend expects productId as string _id and numeric unitPrice
         const orderData = {
           vendorId: finalVendorId,
           supplierId,
-          items: supplierItems.map(item => ({
-            productId: item.id,
-            supplierId: item.supplierId, // Add supplierId for each item
-            quantity: item.quantity,
-            unitPrice: item.price
-          })),
+          items: supplierItems.map(item => {
+            const productId = item._id || item.id || (item.productId && (item.productId._id || item.productId));
+            const supplierIdForItem = item.supplierId || item.supplier?._id || item.supplier;
+            // Ensure unit price is a number and strip currency symbols if present
+            let unitPrice = item.unitPrice ?? item.price;
+            if (typeof unitPrice === 'string') {
+              unitPrice = Number(unitPrice.toString().replace(/[^0-9.-]+/g, '')) || 0;
+            }
+
+            return {
+              productId,
+              supplierId: supplierIdForItem,
+              quantity: item.quantity,
+              unitPrice,
+            };
+          }),
           deliveryType: 'pickup', // You can make this dynamic if needed
         };
         
