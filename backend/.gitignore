@@ -1,0 +1,12 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+
+# Optional OS/filesystem junk
+.DS_Store
+Thumbs.db
+
+src/uploads/kyc
