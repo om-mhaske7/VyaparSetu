@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import CartOrdersModal from "./components/CartOrdersModal";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home.jsx";
+import Landing from "./components/Landing.jsx";
 import Supplier from "./components/Supplier.jsx";
 import Admin from "./components/Admin";
 import RoleRoute from "./components/RoleRoute.jsx";
@@ -66,8 +67,12 @@ function App() {
         />
 
         <Routes>
+          <Route
+            path="/"
+            element={<Landing />}
+          />
           <Route 
-            path="/" 
+            path="/home" 
             element={<Home onAddToCart={handleAddToCart} />}
           />
           <Route 

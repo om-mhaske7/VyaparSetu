@@ -60,9 +60,9 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
     setShowLogin(false);
     // Redirect based on role only if not already on the correct page
     if (userData.role === "vendor") {
-      // Vendors can stay on home page, no need to redirect
-      if (location.pathname !== "/") {
-        navigate("/");
+      // Vendors should land on the products/home page
+      if (location.pathname !== "/home") {
+        navigate("/home");
       }
     } else if (userData.role === "supplier") {
       navigate("/supplier");
@@ -71,7 +71,12 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
     }
   };
   const handleLogout = () => {
+    // preserve role before clearing user so we can redirect appropriately
+    const prevRole = user?.role;
     logout();
+    if (prevRole === 'vendor') {
+      navigate('/');
+    }
   };
 
   // Detect if on /supplier route
