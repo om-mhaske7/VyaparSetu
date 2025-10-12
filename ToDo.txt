@@ -1,0 +1,7 @@
+cancel order
+Cash on delevery
+payment with razorpay
+verified/unverified show on supplier item
+doc preview for admin
+ui change for all
+map for vendors
