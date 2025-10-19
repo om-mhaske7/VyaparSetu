@@ -77,7 +77,9 @@ exports.getOrdersBySupplier = async (req, res) => {
     // Find orders that contain items from this supplier
     const orders = await Order.find({
       "items.supplierId": supplierId,
-    }).populate("items.productId", "name description unit");
+    })
+      .populate("items.productId", "name description unit")
+      .populate("vendorId", "name address phone");
 
     // Filter items in each order to only include items from this supplier
     // and recalculate total price for supplier-specific items
@@ -211,6 +213,7 @@ exports.getDispatchedOrdersForSupplier = async (req, res) => {
       status: "dispatched",
     })
       .populate("items.productId", "name description unit")
+      .populate("vendorId", "name address phone")
       .sort({ orderedAt: -1 });
 
     // Filter items in each order to only include items from this supplier
@@ -269,6 +272,7 @@ exports.getPendingOrdersForSupplier = async (req, res) => {
       status: "pending",
     })
       .populate("items.productId", "name description unit")
+      .populate("vendorId", "name address phone")
       .sort({ orderedAt: -1 });
 
     // Filter items in each order to only include items from this supplier
@@ -316,6 +320,7 @@ exports.getMyOrders = async (req, res) => {
       "items.supplierId": req.user.id,
     })
       .populate("items.productId", "name description unit")
+      .populate("vendorId", "name address phone")
       .sort({ orderedAt: -1 });
 
     // Filter items in each order to only include items from this supplier
@@ -377,6 +382,7 @@ exports.getMyOrdersByStatus = async (req, res) => {
       status: status,
     })
       .populate("items.productId", "name description unit")
+      .populate("vendorId", "name address phone")
       .sort({ orderedAt: -1 });
 
     // Filter items in each order to only include items from this supplier

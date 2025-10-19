@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const orderSchema = new mongoose.Schema({
   vendorId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Vendor",
+    ref: "User",
     required: true,
   },
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Supplier",
+    ref: "User",
     required: true,
   },
   items: [
@@ -20,7 +20,7 @@ const orderSchema = new mongoose.Schema({
       },
       supplierId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Supplier",
+        ref: "User",
         required: true,
       },
       quantity: { type: Number, required: true },

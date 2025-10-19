@@ -55,7 +55,7 @@ function mapApiProductToFrontend(apiProduct) {
     rating: 4.2, // Default rating since API doesn't provide this yet
     ratingCount: Math.floor(Math.random() * 200) + 50, // Random count for demo
     image: apiProduct.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
-    address: "Location not specified", // API doesn't provide address yet
+  address: apiProduct.supplierId?.address || "Location not specified",
     delivery: "Pickup, Local Delivery", // Default delivery options
     phone: apiProduct.supplierId?.phone || "+91 98765 43210",
     verified: apiProduct.supplierId?.isVerified || false,
@@ -467,6 +467,7 @@ function Home({ onAddToCart }) {
                     </div>
 
                     <div className="text-gray-700 font-medium break-words">{getTranslatedField(item, 'supplier', language)}</div>
+                    <div className="text-xs text-gray-500">{getTranslatedField(item, 'address', language)}</div>
                     <div className="flex items-center gap-1">
                       <RatingStars value={item.rating} />
                       <span className="text-gray-500 text-xs">({item.ratingCount})</span>

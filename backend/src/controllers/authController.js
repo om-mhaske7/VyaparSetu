@@ -4,7 +4,7 @@ const generateToken = require("../utils/jwt");
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, role, kycDocs, fssaiNumber } =
+    const { name, email, password, phone, role, kycDocs, fssaiNumber, address } =
       req.body;
 
     const existingUser = await User.findOne({ email });
@@ -14,12 +14,18 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Enforce address for all non-admin users
+    if (role !== 'admin' && (!address || address.trim() === '')) {
+      return res.status(400).json({ error: 'Address is required for non-admin users' });
+    }
+
     const user = new User({
       name,
       email,
       password: hashedPassword,
       phone,
       role,
+      address: address || '',
       kycDocs: role === "supplier" ? kycDocs || [] : [],
       fssaiNumber: role === "supplier" ? fssaiNumber : undefined,
     });
@@ -35,6 +41,7 @@ exports.register = async (req, res) => {
         phone: user.phone,
         role: user.role,
         isVerified: user.isVerified,
+        address: user.address,
       },
     });
   } catch (err) {

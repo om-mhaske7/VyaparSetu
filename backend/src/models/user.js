@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  address: {
+    type: String,
+    trim: true,
+    default: "",
+  },
 
   kycDocs: {
     type: [String], // Only for suppliers

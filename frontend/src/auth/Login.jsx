@@ -17,6 +17,7 @@ const Login = ({ onSuccess, onClose }) => {
   const [email, setEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [role, setRole] = useState(roles[0]);
   const [error, setError] = useState("");
   const { login } = useAuth();
@@ -71,7 +72,7 @@ const Login = ({ onSuccess, onClose }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!name || !email || !signupPassword || !phone || !role) {
+    if (!name || !email || !signupPassword || !phone || !role || !address) {
       setError(t('fillAllFields'));
       return;
     }
@@ -86,6 +87,7 @@ const Login = ({ onSuccess, onClose }) => {
         password: signupPassword,
         phone,
         role,
+        address,
       });
 
       // Store token and user info
@@ -172,6 +174,13 @@ const Login = ({ onSuccess, onClose }) => {
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder={t('address') || 'Address'}
+                className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
               />
               <select
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
