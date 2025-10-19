@@ -32,6 +32,22 @@ const Supplier = () => {
   });
   const [adding, setAdding] = useState(false);
 
+  // Verification states (moved up so effects can reference them)
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState("not_submitted"); // "not_submitted", "pending", "verified", "rejected"
+  const [showVerificationForm, setShowVerificationForm] = useState(false);
+  const [verificationForm, setVerificationForm] = useState({
+    businessName: "",
+    fssaiNumber: "",
+    certificateType: "FSSAI",
+    certificateFile: null,
+    businessAddress: "",
+    contactPerson: "",
+    phoneNumber: "",
+    email: ""
+  });
+  const [submittingVerification, setSubmittingVerification] = useState(false);
+
   // Function to map API product data to component format
   const mapApiProductToComponent = (apiProduct) => {
     return {
@@ -100,23 +116,16 @@ const Supplier = () => {
     }
   }, [user?.id, user?.role]);
 
+  // Update local verification status immediately when user prop changes
+  useEffect(() => {
+    if (user?.verificationStatus) {
+      setVerificationStatus(user.verificationStatus);
+    }
+  }, [user?.verificationStatus]);
 
 
-  // Verification states
-  const [isVerified, setIsVerified] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState("not_submitted"); // "not_submitted", "pending", "verified", "rejected"
-  const [showVerificationForm, setShowVerificationForm] = useState(false);
-  const [verificationForm, setVerificationForm] = useState({
-    businessName: "",
-    fssaiNumber: "",
-    certificateType: "FSSAI",
-    certificateFile: null,
-    businessAddress: "",
-    contactPerson: "",
-    phoneNumber: "",
-    email: ""
-  });
-  const [submittingVerification, setSubmittingVerification] = useState(false);
+
+  
 
   // Dynamic orders state
   const [orders, setOrders] = useState([]);

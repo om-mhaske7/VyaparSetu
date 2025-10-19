@@ -18,8 +18,17 @@ const VerificationStatus = ({
   handleVerificationSubmit,
   submittingVerification,
   onSuccessfulSubmit,
+  // optional initial status passed by parent (could be 'approved'|'rejected'|'pending' or other)
+  verificationStatus: initialStatus,
 }) => {
-  const [verificationStatus, setVerificationStatus] = useState("pending");
+  const mapStatus = (s) => {
+    if (!s) return 'pending';
+    if (s === 'approved' || s === 'verified') return 'verified';
+    if (s === 'rejected') return 'rejected';
+    return 'pending';
+  };
+
+  const [verificationStatus, setVerificationStatus] = useState(() => mapStatus(initialStatus));
 
   const fetchStatus = async () => {
     try {
@@ -41,7 +50,8 @@ const VerificationStatus = ({
 
   useEffect(() => {
     if (userId) {
-      fetchStatus(); // initial fetch
+      // If initial status wasn't provided, fetch it immediately
+      if (!initialStatus) fetchStatus();
       const interval = setInterval(fetchStatus, 5000); // polling
       return () => clearInterval(interval);
     }

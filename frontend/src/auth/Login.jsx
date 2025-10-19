@@ -32,19 +32,34 @@ const Login = ({ onSuccess, onClose }) => {
     setIsLoading(true);
     setError("");
     
-    try {
-      const response = await authAPI.login({
-        email: loginId,
-        password: loginPassword,
-      });
-      
-    // Store token and user info
-    // Make supplier sessions persistent by default (so refreshing stays logged in)
-  const persist = rememberMe || response.user?.role === 'supplier';
-  tokenManager.setToken(response.token, persist);
-  if (persist) tokenManager.setUserData(response.user);
-  login(response.user);
-      onSuccess(response.user);
+      try {
+        const response = await authAPI.login({
+          email: loginId,
+          password: loginPassword,
+        });
+
+        // Store token and user info
+        // Make supplier sessions persistent by default (so refreshing stays logged in)
+        const persist = rememberMe || response.user?.role === 'supplier';
+        tokenManager.setToken(response.token, persist);
+
+        // Fetch authoritative user data from backend (includes verification status)
+        let fullUser = response.user || response;
+        try {
+          const me = await authAPI.getCurrentUser();
+          // backend may return { user: {...} } or the user object directly
+          if (me) {
+            if (me.user) fullUser = me.user;
+            else fullUser = me;
+          }
+        } catch (err) {
+          // If /auth/me fails, fall back to response.user
+          console.warn('Failed to fetch current user after login, falling back to login response', err);
+        }
+
+        if (persist) tokenManager.setUserData(fullUser);
+        login(fullUser);
+        onSuccess(fullUser);
     } catch (err) {
       setError(err.message || t('loginFailed'));
     } finally {
@@ -70,14 +85,27 @@ const Login = ({ onSuccess, onClose }) => {
         phone,
         role,
       });
-      
-    // Store token and user info
-    // For signup, persist by default if the chosen role is supplier
-  const signupPersist = rememberMe || role === 'supplier';
-  tokenManager.setToken(response.token, signupPersist);
-  if (signupPersist) tokenManager.setUserData(response.user);
-  login(response.user);
-      onSuccess(response.user);
+
+      // Store token and user info
+      // For signup, persist by default if the chosen role is supplier
+      const signupPersist = rememberMe || role === 'supplier';
+      tokenManager.setToken(response.token, signupPersist);
+
+      // Fetch authoritative user data
+      let fullUser = response.user || response;
+      try {
+        const me = await authAPI.getCurrentUser();
+        if (me) {
+          if (me.user) fullUser = me.user;
+          else fullUser = me;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch current user after signup, falling back to signup response', err);
+      }
+
+      if (signupPersist) tokenManager.setUserData(fullUser);
+      login(fullUser);
+      onSuccess(fullUser);
     } catch (err) {
       setError(err.message || t('signupFailed'));
     } finally {
