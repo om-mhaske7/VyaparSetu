@@ -56,10 +56,17 @@ const Supplier = () => {
       setLoading(true);
 
       // Use the secure API that automatically filters by current supplier
+      console.debug('Supplier: calling productAPI.getMyProducts()');
       const response = await productAPI.getMyProducts();
+      console.debug('Supplier: getMyProducts response:', response);
 
-      const mappedProducts = response.map(mapApiProductToComponent);
-      setProducts(mappedProducts);
+      if (!Array.isArray(response)) {
+        console.warn('getMyProducts returned non-array, normalized to empty array', response);
+        setProducts([]);
+      } else {
+        const mappedProducts = response.map(mapApiProductToComponent);
+        setProducts(mappedProducts);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setShowToast({ type: "error", message: "Failed to load products" });
@@ -85,6 +92,13 @@ const Supplier = () => {
     fetchVerificationStatus();
   }
 }, [user?._id]);
+
+  // Fetch supplier products when user becomes available (mount/refresh)
+  useEffect(() => {
+    if (user?.id || user?.role === 'supplier') {
+      fetchProducts();
+    }
+  }, [user?.id, user?.role]);
 
 
 
@@ -163,9 +177,10 @@ const Supplier = () => {
   // Fetch orders when component mounts or user changes
   useEffect(() => {
     if (user?.id || user?.role === 'supplier') {
+      console.log('Supplier: fetching orders for user', user?.id, user?.role);
       fetchOrders();
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const handleEditClick = (idx) => {
     const product = products[idx];

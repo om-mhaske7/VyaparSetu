@@ -163,7 +163,7 @@ export const productAPI = {
   // Get current supplier's products (authenticated)
   getMyProducts: async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = tokenManager.getToken ? tokenManager.getToken() : localStorage.getItem('authToken');
       if (!token) {
         throw new Error('Authentication required');
       }
@@ -172,19 +172,35 @@ export const productAPI = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       };
-      
+
       const response = await fetch(`${API_BASE_URL}/prod/my-products`, {
         method: 'GET',
         headers: headers,
         mode: 'cors',
       });
-      
+
       if (!response.ok) {
+        // Try to provide clearer message for 401
+        if (response.status === 401) {
+          throw new Error('Authentication failed (401)');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      return data;
+
+      // Normalize response shape: backend may return { products: [...] } or [...] directly
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.products)) return data.products;
+      if (Array.isArray(data.data)) return data.data;
+
+      // If the returned object has items under other keys, attempt to find an array
+      for (const key of Object.keys(data || {})) {
+        if (Array.isArray(data[key])) return data[key];
+      }
+
+      // If nothing looks like an array, return empty array (caller will handle messaging)
+      return [];
     } catch (error) {
       console.error('Error fetching my products:', error);
       throw error;
