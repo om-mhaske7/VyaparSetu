@@ -115,8 +115,8 @@ const OrderManagement = ({ orders, handleAcceptOrder, handleRejectOrder, ordersL
           {/* Vendor / delivery location shown for supplier */}
           {order.vendorId && (
             <div className="text-sm text-gray-700 mb-2">
-              <span className="font-medium">Vendor:</span> {order.vendorId.name || order.vendorId}
-              <div className="text-xs text-gray-500">{order.vendorId.address || 'Location not provided'}</div>
+              <div><span className="font-medium">Vendor:</span> {order.vendorId.name || order.vendorId}</div>
+              <div> <span className="font-medium">Location:</span> {order.vendorId.address || 'Location not provided'}</div>
             </div>
           )}
           
