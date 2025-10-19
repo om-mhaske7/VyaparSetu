@@ -84,9 +84,8 @@ const Supplier = () => {
         setProducts(mappedProducts);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      setShowToast({ type: "error", message: "Failed to load products" });
-      // Keep empty array if error
+      console.error('Error fetching products (silenced toast):', error);
+      // Do not show toast for product loading failures as requested
       setProducts([]);
     } finally {
       setLoading(false);
@@ -175,8 +174,8 @@ const Supplier = () => {
 
       setOrders(ordersWithProductDetails);
     } catch (error) {
-      console.error('Error fetching orders:', error);
-      setShowToast({ type: "error", message: "Failed to load orders" });
+      console.error('Error fetching orders (silenced toast):', error);
+      // Do not show toast for order loading failures as per request
       setOrders([]);
     } finally {
       setOrdersLoading(false);
