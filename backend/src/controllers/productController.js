@@ -22,7 +22,7 @@ exports.getAllProducts = async (req, res) => {
       query.supplierId = req.user.id;
     }
 
-    const products = await Product.find(query).populate("supplierId", "name");
+  const products = await Product.find(query).populate("supplierId", "name phone isVerified");
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch products" });
@@ -32,7 +32,7 @@ exports.getAllProducts = async (req, res) => {
 // GET /products/public - For public access (no authentication required)
 exports.getPublicProducts = async (req, res) => {
   try {
-    const products = await Product.find({ isActive: true }).populate("supplierId", "name");
+  const products = await Product.find({ isActive: true }).populate("supplierId", "name phone isVerified");
     res.json(products);
   } catch (err) {
     console.error('Error fetching public products:', err);
@@ -80,7 +80,7 @@ exports.deleteProduct = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+  const product = await Product.findById(req.params.id).populate("supplierId", "name phone isVerified");
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -114,7 +114,7 @@ exports.getProductsBySupplierId = async (req, res) => {
         });
     }
 
-    const products = await Product.find({ supplierId, isActive: true });
+  const products = await Product.find({ supplierId, isActive: true }).populate("supplierId", "name phone isVerified");
 
     res.status(200).json(products);
   } catch (error) {
@@ -135,7 +135,7 @@ exports.getMyProducts = async (req, res) => {
     const products = await Product.find({
       supplierId: req.user.id,
       isActive: true,
-    });
+    }).populate("supplierId", "name phone isVerified");
 
     res.status(200).json(products);
   } catch (error) {

@@ -151,6 +151,11 @@ function Home({ onAddToCart }) {
         setLoading(true);
         setError(null);
         const response = await productAPI.getProducts();
+        // Debug: log raw API response to help verify supplier payload
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.debug('Products API raw response:', response);
+        }
         const mappedProducts = response.map(mapApiProductToFrontend);
         setProducts(mappedProducts);
         setFilteredProducts(mappedProducts);
@@ -452,9 +457,11 @@ function Home({ onAddToCart }) {
                         ₹{item.price} / {item.unit}
                       </div>
                       {item.verified && (
-                        <div className="flex flex-col items-end">
-                          <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">{t('verified') || 'Verified'}</span>
-                          <span className="mt-1 bg-green-50 text-green-800 text-[10px] font-semibold px-2 py-0.5 rounded">{t('verifiedBatch') || 'Verified Batch'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 border border-green-200 text-green-700 px-2 py-0.5 rounded-full text-xs" title={t('verified') || 'Verified'}>
+                            <FaCheck className="w-3 h-3" />
+                            {t('verified') || 'Verified'}
+                          </span>
                         </div>
                       )}
                     </div>
