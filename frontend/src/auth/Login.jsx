@@ -20,6 +20,7 @@ const Login = ({ onSuccess, onClose }) => {
   const [role, setRole] = useState(roles[0]);
   const [error, setError] = useState("");
   const { login } = useAuth();
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ const Login = ({ onSuccess, onClose }) => {
       });
       
       // Store token and user info
-      tokenManager.setToken(response.token);
+  tokenManager.setToken(response.token, rememberMe);
       login(response.user);
       onSuccess(response.user);
     } catch (err) {
@@ -68,7 +69,7 @@ const Login = ({ onSuccess, onClose }) => {
       });
       
       // Store token and user info
-      tokenManager.setToken(response.token);
+  tokenManager.setToken(response.token, rememberMe);
       login(response.user);
       onSuccess(response.user);
     } catch (err) {
@@ -142,6 +143,10 @@ const Login = ({ onSuccess, onClose }) => {
               >
                 {roles.map(r => <option key={r} value={r}>{t(r)}</option>)}
               </select>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                <span className="text-gray-600">{t('rememberMe') || 'Remember me'}</span>
+              </label>
               {error && <div className="text-red-500 text-sm text-center">{error}</div>}
               <button
                 type="submit"
@@ -170,6 +175,10 @@ const Login = ({ onSuccess, onClose }) => {
                 value={loginPassword}
                 onChange={e => setLoginPassword(e.target.value)}
               />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                <span className="text-gray-600">{t('rememberMe') || 'Remember me'}</span>
+              </label>
               {error && <div className="text-red-500 text-sm text-center">{error}</div>}
               <button
                 type="submit"

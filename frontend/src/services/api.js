@@ -554,8 +554,14 @@ export const orderAPI = {
 
 // Token management
 export const tokenManager = {
-  setToken: (token) => {
+  // store token; if persist === true, also mark session persistence
+  setToken: (token, persist = false) => {
     localStorage.setItem("authToken", token);
+    if (persist) {
+      localStorage.setItem("persistAuth", "1");
+    } else {
+      localStorage.removeItem("persistAuth");
+    }
   },
 
   getToken: () => {
@@ -564,9 +570,19 @@ export const tokenManager = {
 
   removeToken: () => {
     localStorage.removeItem("authToken");
+    // don't automatically clear persist here; explicit clearPersist used on logout
   },
 
   isAuthenticated: () => {
     return !!localStorage.getItem("authToken");
+  },
+
+  // persistence helpers
+  isPersisted: () => {
+    return localStorage.getItem("persistAuth") === "1";
+  },
+
+  clearPersist: () => {
+    localStorage.removeItem("persistAuth");
   },
 };
