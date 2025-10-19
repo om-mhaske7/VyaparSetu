@@ -581,8 +581,30 @@ export const tokenManager = {
   isPersisted: () => {
     return localStorage.getItem("persistAuth") === "1";
   },
-
   clearPersist: () => {
     localStorage.removeItem("persistAuth");
+  },
+
+  // user data helpers (used when persisting sessions)
+  setUserData: (user) => {
+    try {
+      localStorage.setItem("authUser", JSON.stringify(user));
+    } catch (e) {
+      console.warn('Failed to persist user data', e);
+    }
+  },
+
+  getUserData: () => {
+    try {
+      const s = localStorage.getItem("authUser");
+      return s ? JSON.parse(s) : null;
+    } catch (e) {
+      console.warn('Failed to parse stored user data', e);
+      return null;
+    }
+  },
+
+  removeUserData: () => {
+    localStorage.removeItem("authUser");
   },
 };

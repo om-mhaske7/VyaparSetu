@@ -38,9 +38,12 @@ const Login = ({ onSuccess, onClose }) => {
         password: loginPassword,
       });
       
-      // Store token and user info
-  tokenManager.setToken(response.token, rememberMe);
-      login(response.user);
+    // Store token and user info
+    // Make supplier sessions persistent by default (so refreshing stays logged in)
+  const persist = rememberMe || response.user?.role === 'supplier';
+  tokenManager.setToken(response.token, persist);
+  if (persist) tokenManager.setUserData(response.user);
+  login(response.user);
       onSuccess(response.user);
     } catch (err) {
       setError(err.message || t('loginFailed'));
@@ -68,9 +71,12 @@ const Login = ({ onSuccess, onClose }) => {
         role,
       });
       
-      // Store token and user info
-  tokenManager.setToken(response.token, rememberMe);
-      login(response.user);
+    // Store token and user info
+    // For signup, persist by default if the chosen role is supplier
+  const signupPersist = rememberMe || role === 'supplier';
+  tokenManager.setToken(response.token, signupPersist);
+  if (signupPersist) tokenManager.setUserData(response.user);
+  login(response.user);
       onSuccess(response.user);
     } catch (err) {
       setError(err.message || t('signupFailed'));
