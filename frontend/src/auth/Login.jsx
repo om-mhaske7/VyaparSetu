@@ -38,10 +38,12 @@ const Login = ({ onSuccess, onClose }) => {
           password: loginPassword,
         });
 
-        // Store token and user info
-        // Make supplier sessions persistent by default (so refreshing stays logged in)
-        const persist = rememberMe || response.user?.role === 'supplier';
-        tokenManager.setToken(response.token, persist);
+  // Determine token from possible response shapes
+  const token = response?.token || response?.data?.token || response?.user?.token || response?.accessToken || null;
+  // Store token and user info
+  // Make supplier sessions persistent by default (so refreshing stays logged in)
+  const persist = rememberMe || response.user?.role === 'supplier';
+  tokenManager.setToken(token, persist);
 
         // Fetch authoritative user data from backend (includes verification status)
         let fullUser = response.user || response;
@@ -88,8 +90,9 @@ const Login = ({ onSuccess, onClose }) => {
 
       // Store token and user info
       // For signup, persist by default if the chosen role is supplier
-      const signupPersist = rememberMe || role === 'supplier';
-      tokenManager.setToken(response.token, signupPersist);
+  const token = response?.token || response?.data?.token || response?.user?.token || response?.accessToken || null;
+  const signupPersist = rememberMe || role === 'supplier';
+  tokenManager.setToken(token, signupPersist);
 
       // Fetch authoritative user data
       let fullUser = response.user || response;

@@ -572,7 +572,11 @@ export const orderAPI = {
 export const tokenManager = {
   // store token; if persist === true, also mark session persistence
   setToken: (token, persist = false) => {
-    localStorage.setItem("authToken", token);
+    if (token) {
+      localStorage.setItem("authToken", token);
+    } else {
+      localStorage.removeItem("authToken");
+    }
     if (persist) {
       localStorage.setItem("persistAuth", "1");
     } else {
