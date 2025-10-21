@@ -1,4 +1,6 @@
 const Order = require("../models/order");
+const Product = require("../models/product");
+const mongoose = require("mongoose");
 
 exports.createOrder = async (req, res) => {
   try {
@@ -15,8 +17,35 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Validate stock availability for each item before creating order
+    for (const item of items) {
+      const productId = item.productId;
+      const quantity = Number(item.quantity) || 0;
+
+      if (!productId) {
+        return res.status(400).json({ message: "Each item must include productId" });
+      }
+
+      const product = await Product.findById(productId).lean();
+      if (!product) {
+        return res.status(400).json({ message: `Product not found: ${productId}` });
+      }
+
+      // Optional: ensure the supplierId matches product.supplierId
+      if (product.supplierId && product.supplierId.toString() !== supplierId) {
+        return res.status(400).json({ message: `Product ${productId} does not belong to supplier ${supplierId}` });
+      }
+
+      const stockQty = Number(product.stockQty) || 0;
+      if (quantity > stockQty) {
+        return res.status(400).json({
+          message: `Insufficient stock for product ${productId}: requested ${quantity}, available ${stockQty}`
+        });
+      }
+    }
+
     const totalPrice = items.reduce(
-      (acc, item) => acc + item.unitPrice * item.quantity,
+      (acc, item) => acc + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0),
       0
     );
 
@@ -130,10 +159,98 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    // Security check: If user is a supplier, only allow updating orders that contain their items
+    // normalize supplier id from req.user (support _id or id)
+    const supplierUserId = req.user && (req.user._id ? req.user._id.toString() : (req.user.id ? req.user.id.toString() : null));
+
+    // If user is supplier and trying to update, we'll validate ownership per-item after loading the order.
+    // For supplier acceptance we must atomically decrement stock for the supplier's products
+    if (status === "accepted" && req.user && req.user.role === "supplier") {
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        // Load the order within the session (don't rely on querying by items.supplierId which can mismatch types)
+        const order = await Order.findById(orderId).session(session);
+        if (!order) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({ message: "Order not found" });
+        }
+
+        // Ensure this supplier actually has items in the order
+        if (!supplierUserId) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const supplierItems = order.items.filter(
+          (item) => item.supplierId && item.supplierId.toString() === supplierUserId
+        );
+
+        if (supplierItems.length === 0) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(403).json({ message: "Access denied. No items for this supplier in the order." });
+        }
+
+        // Check stock and decrement atomically per product
+        const insufficient = [];
+        for (const it of supplierItems) {
+          const productId = it.productId;
+          const qty = Number(it.quantity) || 0;
+
+          // decrement only if enough stock remains
+          const updatedProduct = await Product.findOneAndUpdate(
+            { _id: productId, stockQty: { $gte: qty } },
+            { $inc: { stockQty: -qty } },
+            { new: true, session }
+          );
+
+          if (!updatedProduct) {
+            insufficient.push({ productId: productId.toString(), requested: qty });
+          }
+        }
+
+        if (insufficient.length > 0) {
+          // rollback transaction and inform supplier
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({
+            message: "Insufficient stock for one or more items. Accept aborted.",
+            details: insufficient,
+          });
+        }
+
+        // All stock decremented successfully; update order status for supplier's items
+        // If you want to track per-item acceptance you can mark those items; here we update overall order status.
+        order.status = status;
+        order.updatedAt = new Date();
+        await order.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        // return updated order (fresh)
+        const updatedOrder = await Order.findById(order._id);
+        return res.json(updatedOrder);
+      } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("Update Order Status Transaction Error:", err);
+        return res.status(500).json({ message: "Server error during status update" });
+      }
+    }
+
+    // For non-accept actions or non-supplier users, fallback to standard update with authorization check
     let query = { _id: orderId };
     if (req.user && req.user.role === "supplier") {
-      query["items.supplierId"] = req.user.id;
+      // verify supplier owns at least one item before allowing status change
+      const ord = await Order.findById(orderId);
+      if (!ord) return res.status(404).json({ message: "Order not found" });
+      const hasItem = ord.items.some(it => it.supplierId && supplierUserId && it.supplierId.toString() === supplierUserId);
+      if (!hasItem) {
+        return res.status(403).json({ message: "Order not found or unauthorized" });
+      }
     }
 
     const updatedOrder = await Order.findOneAndUpdate(

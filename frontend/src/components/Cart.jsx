@@ -12,12 +12,29 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
   const totalPrice = items.reduce((total, item) => total + (item.price * item.quantity), 0);
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
+  // Prevent placing order if any item quantity exceeds supplier stock
+  const cannotPlaceBecauseStock = items.some(item => {
+    const available = Number(item.inStock ?? item.stockQty ?? 0);
+    return available > 0 ? Number(item.quantity) > available : Number(item.quantity) > 0;
+  });
+
   // Handler for placing order
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
     setLoading(true);
     
     try {
+      // Validate against available stock before placing order
+      const outOfStock = items.find(item => {
+        const available = item.inStock ?? item.stockQty ?? 0;
+        return Number(item.quantity) > Number(available);
+      });
+      if (outOfStock) {
+        alert(`${outOfStock.name}: only ${outOfStock.inStock ?? outOfStock.stockQty ?? 0} ${outOfStock.unit || ''} available. Reduce quantity before placing order.`);
+        setLoading(false);
+        return;
+      }
+
       // Generate a valid MongoDB ObjectId format for vendorId if not available
       const generateObjectId = () => {
         return '507f1f77bcf86cd799439011'; // Valid demo ObjectId
@@ -133,7 +150,7 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-0">
                     <button
-                      onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
                       disabled={item.quantity <= 1}
                       className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition text-xs sm:text-base ${
                         item.quantity <= 1 
@@ -143,9 +160,29 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
                     >
                       <FaMinus />
                     </button>
-                    <span className="w-7 sm:w-8 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
+                    {(() => {
+                      const available = Number(item.inStock ?? item.stockQty ?? 0);
+                      const atMax = available > 0 ? item.quantity >= available : false;
+                      return (
+                        <div className="flex flex-col items-center">
+                          <span className="w-12 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
+                          <span className="text-xs text-gray-500">/{available} available</span>
+                        </div>
+                      );
+                    })()}
                     <button
-                      onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => {
+                        const available = Number(item.inStock ?? item.stockQty ?? 0);
+                        if (available > 0 && item.quantity >= available) {
+                          alert(`${item.name}: only ${available} ${item.unit || ''} available. Reduce quantity or contact supplier.`);
+                          return;
+                        }
+                        onUpdateQuantity(item.id, item.quantity + 1);
+                      }}
+                      disabled={(() => {
+                        const available = Number(item.inStock ?? item.stockQty ?? 0);
+                        return available > 0 ? item.quantity >= available : false;
+                      })()}
                       className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-green-200 hover:bg-green-300 rounded-full transition text-xs sm:text-base"
                     >
                       <FaPlus />
@@ -170,6 +207,11 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
               <span className="text-base sm:text-lg font-semibold">Total:</span>
               <span className="text-xl sm:text-2xl font-bold text-green-600">₹{totalPrice}</span>
             </div>
+            {cannotPlaceBecauseStock && (
+              <div className="text-sm text-red-600 mb-2">
+                One or more items exceed supplier stock. Reduce quantities to place the order.
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={onClose}
@@ -180,7 +222,8 @@ const Cart = ({ items, onClose, onRemoveItem, onUpdateQuantity, onOrderSuccess }
               <button 
                 onClick={handlePlaceOrder}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 sm:py-3 px-4 rounded-lg transition disabled:opacity-50 text-sm sm:text-base"
-                disabled={items.length === 0 || loading}
+                disabled={items.length === 0 || loading || cannotPlaceBecauseStock}
+                title={cannotPlaceBecauseStock ? "Reduce quantities to match supplier stock" : undefined}
               >
                 {loading ? 'Placing Order...' : 'Place Order'}
               </button>

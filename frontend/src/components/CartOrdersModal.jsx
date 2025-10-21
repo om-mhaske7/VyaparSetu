@@ -108,6 +108,17 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     setLoading(true);
     
     try {
+      // Validate against available stock before placing order (also disable at UI)
+      const outOfStock = cartItems.find(item => {
+        const available = Number(item.inStock ?? item.stockQty ?? 0);
+        return available > 0 ? Number(item.quantity) > available : Number(item.quantity) > 0;
+      });
+      if (outOfStock) {
+        alert(`${outOfStock.name}: only ${outOfStock.inStock ?? outOfStock.stockQty ?? 0} ${outOfStock.unit || ''} available. Reduce quantity before placing order.`);
+        setLoading(false);
+        return;
+      }
+
       // Generate a valid MongoDB ObjectId format for vendorId if not available
       const generateObjectId = () => {
         return '507f1f77bcf86cd799439011'; // Valid demo ObjectId
@@ -218,6 +229,12 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
       setLoading(false);
     }
   };
+  
+  // helper to check available for UI controls
+  const isAtMax = (item) => {
+    const available = Number(item.inStock ?? item.stockQty ?? 0);
+    return available > 0 ? item.quantity >= available : false;
+  };
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -274,7 +291,7 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                         </div>
                         <div className="flex items-center gap-3">
                           <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
                             disabled={item.quantity <= 1}
                             className={`w-10 h-10 flex items-center justify-center rounded-full text-xl transition ${
                               item.quantity <= 1 
@@ -284,9 +301,20 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                           >
                             <FaMinus />
                           </button>
-                          <span className="w-10 text-center font-bold text-lg">{item.quantity}</span>
+                          <div className="flex flex-col items-center">
+                            <span className="w-16 text-center font-bold text-lg">{item.quantity}</span>
+                            <span className="text-xs text-gray-500">/{item.inStock ?? item.stockQty ?? 0} available</span>
+                          </div>
                           <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => {
+                              const available = Number(item.inStock ?? item.stockQty ?? 0);
+                              if (available > 0 && item.quantity >= available) {
+                                alert(`${item.name}: only ${available} ${item.unit || ''} available.`);
+                                return;
+                              }
+                              onUpdateQuantity(item.id, item.quantity + 1);
+                            }}
+                            disabled={isAtMax(item)}
                             className="w-10 h-10 flex items-center justify-center rounded-full bg-green-200 hover:bg-green-300 text-green-800 text-xl transition"
                           >
                             <FaPlus />
@@ -310,7 +338,8 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                     <button
                       onClick={handlePlaceOrder}
                       className="w-full md:w-64 bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-md transition disabled:opacity-50"
-                      disabled={cartItems.length === 0 || loading}
+                      disabled={cartItems.length === 0 || loading || cartItems.some(i => Number(i.quantity) > Number(i.inStock ?? i.stockQty ?? 0))}
+                      title={cartItems.some(i => Number(i.quantity) > Number(i.inStock ?? i.stockQty ?? 0)) ? "Reduce quantities to match supplier stock" : undefined}
                     >
                       {loading ? 'Placing Order...' : 'Place Order'}
                     </button>
@@ -428,4 +457,4 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
   );
 };
 
-export default CartOrdersModal; 
+export default CartOrdersModal;
