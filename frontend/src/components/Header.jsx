@@ -2,21 +2,25 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   FaShoppingCart,
   FaGlobeAsia,
-  FaUserFriends,
   FaStar,
   FaChevronDown,
 } from "react-icons/fa";
+import { createIcons, icons } from "lucide";
 import { useTranslation } from "react-i18next";
 import Login from "../auth/Login";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+createIcons({ icons });
 
 const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
   const [showLogin, setShowLogin] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const profileRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading, login, logout } = useAuth();
@@ -25,6 +29,9 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowLanguageDropdown(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
       }
     };
 
@@ -69,6 +76,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   const handleLogout = () => {
     const prevRole = user?.role;
     logout();
+    setShowProfileDropdown(false);
     if (prevRole === 'vendor') {
       navigate('/');
     }
@@ -93,19 +101,19 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
           </div>
         </div>
 
-        {/* Right: Language Dropdown, Login/Signup or User Info/Cart */}
+        {/* Right: Language Dropdown, Login/Signup or User Info/Cart/Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="relative" ref={dropdownRef}>
             <button
               className="flex items-center bg-gray-50 border rounded-lg px-2 py-2 hover:bg-gray-100 transition text-sm"
-              onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+              onClick={() => { setShowLanguageDropdown(!showLanguageDropdown); setShowProfileDropdown(false); }}
             >
               <FaGlobeAsia className="mr-2 text-gray-500" />
               <span className="font-medium text-gray-700">{getCurrentLanguageName()}</span>
               <FaChevronDown className={`ml-2 text-gray-500 transition-transform ${showLanguageDropdown ? 'rotate-180' : ''}`} />
             </button>
             {showLanguageDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[120px] z-50">
+              <div className="absolute top-full right-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] z-50">
                 {languageOptions.map((lang) => (
                   <button
                     key={lang.code}
@@ -132,12 +140,10 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
           {isLoading && (
             <div className="text-gray-500 text-sm">Loading...</div>
           )}
+
           {user && (
             <>
-              <div className="text-right ml-2">
-                <div className="text-gray-500 text-xs">Welcome</div>
-                <div className="font-medium text-gray-800 text-sm">{user.name}</div>
-              </div>
+              {/* Cart (vendor only) */}
               {user.role === 'vendor' && (
                 <button 
                   onClick={onCartClick}
@@ -146,9 +152,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                   }`}
                 >
                   <FaShoppingCart className={`text-lg transition-transform ${cartCount > 0 ? 'scale-110' : ''}`} />
-                  <span>
-                    {t('cart')} ({cartCount})
-                  </span>
+                  <span>{t('cart')} ({cartCount})</span>
                   {cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                       {cartCount > 99 ? '99+' : cartCount}
@@ -156,13 +160,55 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                   )}
                 </button>
               )}
-              <button className="ml-2 text-xs text-red-600 hover:underline cursor-pointer" onClick={handleLogout}>Logout</button>
+
+              {/* Profile button + dropdown (use lucide user icon, no chevron) */}
+              <div className="relative ml-2" ref={profileRef}>
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(!showProfileDropdown);
+                    setShowLanguageDropdown(false);
+                  }}
+                  className="flex items-center gap-2 border rounded-full px-2 py-1 hover:bg-gray-100 transition text-sm"
+                  aria-haspopup="true"
+                >
+                  <i data-lucide="user" className="w-5 h-5 text-black" />
+                </button>
+
+
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50 py-1">
+                    <div className="px-4 py-2 border-b text-sm text-gray-700 flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Welcome</span>
+                      <span className="font-medium truncate">{user.name}</span>
+                    </div>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                      onClick={() => {(false); navigate('/profile'); }}
+                    >
+                      {t('Profile') || 'Profile'}
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                      onClick={() => { setShowProfileDropdown(false); navigate('/settings'); }}
+                    >
+                      {t('Settings') || 'Settings'}
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
+                      onClick={handleLogout}
+                    >
+                      {t('logout') || 'Logout'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
+
         {showLogin && <Login onSuccess={handleLoginSuccess} onClose={() => setShowLogin(false)} />}
       </header>
-      {/* removed extra vendor/subtitle blocks for a simpler header */}
     </>
   );
 };
