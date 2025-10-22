@@ -5,3 +5,4 @@ verified/unverified show on supplier item
 doc preview for admin
 ui change for all
 map for vendors
+embedding for words

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
-import CartOrdersModal from "./components/CartOrdersModal";
+import CartOrdersModal from "./components/CartOrdersModal.jsx";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home.jsx";
 import Landing from "./components/Landing.jsx";
