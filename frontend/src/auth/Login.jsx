@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
@@ -118,9 +118,20 @@ const Login = ({ onSuccess, onClose }) => {
     }
   };
 
+  // Add useEffect to handle body overflow
+  useEffect(() => {
+    // Disable scrolling on mount
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable scrolling on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-green-100 via-white to-green-50 bg-opacity-80 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative border border-green-100">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-100 via-white to-green-50 bg-opacity-80 flex items-center justify-center z-50 overflow-y-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative border border-green-100 max-h-[90vh] overflow-y-auto">
         <button
           className="absolute top-3 right-4 text-gray-400 hover:text-green-600 text-2xl font-bold focus:outline-none"
           onClick={onClose}
@@ -241,4 +252,4 @@ const Login = ({ onSuccess, onClose }) => {
   );
 };
 
-export default Login; 
+export default Login;
