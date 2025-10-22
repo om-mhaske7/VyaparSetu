@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  FaShoppingCart,
-  FaGlobeAsia,
-  FaStar,
-  FaChevronDown,
-} from "react-icons/fa";
-import { createIcons, icons } from "lucide";
+import { FaShoppingCart, FaGlobeAsia, FaStar, FaChevronDown } from "react-icons/fa";
+import { User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Login from "../auth/Login";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
-createIcons({ icons });
 
 const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   const { t, i18n } = useTranslation();
@@ -102,7 +95,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
         </div>
 
         {/* Right: Language Dropdown, Login/Signup or User Info/Cart/Profile */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-1">
           <div className="relative" ref={dropdownRef}>
             <button
               className="flex items-center bg-gray-50 border rounded-lg px-2 py-2 hover:bg-gray-100 transition text-sm"
@@ -147,7 +140,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
               {user.role === 'vendor' && (
                 <button 
                   onClick={onCartClick}
-                  className={`flex items-center gap-2 border px-3 py-1 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition ml-2 relative text-sm ${
+                  className={`flex items-center gap-2 border px-3 py-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition ml-2 relative text-sm ${
                     cartCount > 0 ? 'border-green-300 bg-green-50' : ''
                   }`}
                 >
@@ -171,7 +164,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                   className="flex items-center justify-center w-10 h-10 border border-black rounded-full hover:bg-gray-100 transition text-sm"
                   aria-haspopup="true"
                 >
-                  <i data-lucide="user" className="w-5 h-5 text-black" />
+                  <User className="w-5 h-5 text-black" stroke="#000" />
                 </button>
 
                 {showProfileDropdown && (
