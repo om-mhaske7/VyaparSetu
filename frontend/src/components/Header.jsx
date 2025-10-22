@@ -168,13 +168,11 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                     setShowProfileDropdown(!showProfileDropdown);
                     setShowLanguageDropdown(false);
                   }}
-                  className="flex items-center gap-2 border rounded-full px-2 py-1 hover:bg-gray-100 transition text-sm"
+                  className="flex items-center justify-center w-10 h-10 border border-black rounded-full hover:bg-gray-100 transition text-sm"
                   aria-haspopup="true"
                 >
                   <i data-lucide="user" className="w-5 h-5 text-black" />
                 </button>
-
-
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50 py-1">
