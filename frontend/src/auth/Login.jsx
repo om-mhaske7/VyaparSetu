@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
-import MapPicker from "../components/MapPicker";
+import MapPicker from "./MapPicker";
 
 const roles = ["vendor", "supplier"];
 
