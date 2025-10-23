@@ -79,9 +79,26 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   const isSupplier = location.pathname === "/supplier";
   const isAdmin = location.pathname === "/admin";
 
+  // Role-specific nav items
+  const vendorNav = [
+    { label: t('Home') || 'Home', path: '/home' },
+    { label: t('Trending') || 'Trending', path: '/trending' },
+    { label: t('Vendors') || 'Vendors', path: '/search' },
+  ];
+  const supplierNav = [
+    { label: t('Dashboard') || 'Dashboard', path: '/supplier' },
+    { label: t('Analytics') || 'Analytics', path: '/analyze' },
+    { label: t('Maps') || 'Maps', path: '/maps' },
+  ];
+  const navItems = user?.role === 'vendor' ? vendorNav : user?.role === 'supplier' ? supplierNav : [];
+
+  const isActive = (path) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
   return (
     <>
-      <header className="bg-white shadow-sm py-3 px-4 sm:px-4 md:px-6 flex items-center justify-between gap-3">
+      <header className="bg-white shadow-sm py-2 px-4 sm:px-4 md:px-6 flex items-center justify-between gap-3">
         {/* Left: Small Logo and App Name */}
         <div className="flex items-center gap-3">
           <span className="flex-shrink-0">
@@ -93,6 +110,25 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
             </div>
           </div>
         </div>
+
+        {/* Center: role-based nav (shows only for vendor or supplier when logged in) */}
+        {navItems.length > 0 && (
+          <nav className="hidden md:flex items-center gap-3 ml-4">
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`px-3 py-2 rounded-md text-base font-medium transition ${
+                  isActive(item.path)
+                    ? 'text-green-600 bg-green-50 border border-green-100'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
 
         {/* Right: Language Dropdown, Login/Signup or User Info/Cart/Profile */}
         <div className="flex items-center gap-2 sm:gap-1">
