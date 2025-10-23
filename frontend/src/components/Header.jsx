@@ -83,7 +83,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   const vendorNav = [
     { label: t('Home') || 'Home', path: '/home' },
     { label: t('Trending') || 'Trending', path: '/trending' },
-    { label: t('Vendors') || 'Vendors', path: '/search' },
+    { label: t('Suppliers') || 'Suppliers', path: '/search' },
   ];
   const supplierNav = [
     { label: t('Dashboard') || 'Dashboard', path: '/supplier' },

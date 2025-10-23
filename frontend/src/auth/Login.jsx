@@ -172,14 +172,14 @@ const Login = ({ onSuccess, onClose }) => {
             <form onSubmit={handleSignup} className="flex flex-col gap-4 mt-2">
               <input
                 type="text"
-                placeholder={t('name')}
+                placeholder={t('Owner name')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
               <input
                 type="email"
-                placeholder={t('email')}
+                placeholder={t('Business email')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -193,14 +193,14 @@ const Login = ({ onSuccess, onClose }) => {
               />
               <input
                 type="tel"
-                placeholder={t('phone')}
+                placeholder={t('Business phone number')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
               />
               <input
                 type="text"
-                placeholder={t('address') || 'Address'}
+                placeholder={t('Business address') || 'Business address'}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
