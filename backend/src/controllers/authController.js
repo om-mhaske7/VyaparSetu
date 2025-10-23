@@ -4,7 +4,7 @@ const generateToken = require("../utils/jwt");
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, role, kycDocs, fssaiNumber, address } =
+    const { name, email, password, phone, role, kycDocs, fssaiNumber, address, latitude, longitude } =
       req.body;
 
     const existingUser = await User.findOne({ email });
@@ -26,6 +26,8 @@ exports.register = async (req, res) => {
       phone,
       role,
       address: address || '',
+      latitude: latitude || null,
+      longitude: longitude || null,
       kycDocs: role === "supplier" ? kycDocs || [] : [],
       fssaiNumber: role === "supplier" ? fssaiNumber : undefined,
     });
@@ -42,6 +44,8 @@ exports.register = async (req, res) => {
         role: user.role,
         isVerified: user.isVerified,
         address: user.address,
+        latitude: user.latitude,
+        longitude: user.longitude,
       },
     });
   } catch (err) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
+import MapPicker from "../components/MapPicker";
 
 const roles = ["vendor", "supplier"];
 
@@ -22,6 +23,11 @@ const Login = ({ onSuccess, onClose }) => {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
+  const [location, setLocation] = useState(null); // [latitude, longitude]
+
+  const handleLocationSelect = (coordinates) => {
+    setLocation(coordinates);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -76,6 +82,10 @@ const Login = ({ onSuccess, onClose }) => {
       setError(t('fillAllFields'));
       return;
     }
+    if (!location) {
+      setError('Please select your location on the map');
+      return;
+    }
     
     setIsLoading(true);
     setError("");
@@ -88,6 +98,8 @@ const Login = ({ onSuccess, onClose }) => {
         phone,
         role,
         address,
+        latitude: location[0],
+        longitude: location[1],
       });
 
       // Store token and user info
@@ -192,6 +204,11 @@ const Login = ({ onSuccess, onClose }) => {
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
+              />
+              <MapPicker
+                onLocationSelect={handleLocationSelect}
+                initialLocation={location}
+                userRole={role}
               />
               <select
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"

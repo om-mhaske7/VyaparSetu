@@ -4,6 +4,7 @@ import App from './App.jsx';
 import './index.css';
 import { BrowserRouter } from "react-router-dom"; 
 import "./i18n/i18n";
+import 'leaflet/dist/leaflet.css';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
