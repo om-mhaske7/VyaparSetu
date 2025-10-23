@@ -38,7 +38,7 @@ export default function Landing() {
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => navigate('/home')}
+                onClick={() => navigate('/login')}
                 className="bg-green-600 text-white px-5 py-3 rounded-lg font-semibold"
               >Get Started</button>
               <a href="#features" className="px-5 py-3 rounded-lg border border-green-200 text-green-700">See features</a>

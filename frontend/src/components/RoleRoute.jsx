@@ -14,9 +14,9 @@ const ProtectedRoute = ({ children, allowedRoles, fallbackPath = '/' }) => {
     );
   }
 
-  // If not authenticated, redirect to home
+  // If not authenticated, redirect to login
   if (!user) {
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // If user's role is not in allowed roles, redirect to appropriate page
@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, allowedRoles, fallbackPath = '/' }) => {
     // Redirect to user's appropriate page based on their role
     if (user.role === 'vendor') {
       // Vendors can access home page, so redirect there
-      return <Navigate to="/" replace />;
+      return <Navigate to="/home" replace />;
     } else if (user.role === 'supplier') {
       return <Navigate to="/supplier" replace />;
     } else if (user.role === 'admin') {

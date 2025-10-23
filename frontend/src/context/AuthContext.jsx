@@ -18,19 +18,19 @@ export const AuthProvider = ({ children }) => {
   // Check for existing authentication on app start
   useEffect(() => {
     const checkAuth = async () => {
-      // If there is persisted user data, show it immediately for better UX
-      if (tokenManager.isPersisted()) {
-        const storedUser = tokenManager.getUserData();
-        if (storedUser) {
-          setUser(storedUser);
-        }
+      // If there is stored user data, show it immediately for better UX
+      const storedUser = tokenManager.getUserData();
+      if (storedUser) {
+        setUser(storedUser);
       }
 
-      // Only attempt to validate/restore session if user previously chose to persist auth
-      if (tokenManager.isPersisted() && tokenManager.isAuthenticated()) {
+      // If we have a token, try to validate it
+      if (tokenManager.isAuthenticated()) {
         try {
           const response = await authAPI.getCurrentUser();
           setUser(response.user);
+          // Update stored user data with fresh data from server
+          tokenManager.setUserData(response.user);
         } catch (error) {
           // Token is invalid, remove it and clear persistence + stored user
           tokenManager.removeToken();
@@ -48,6 +48,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (userData) => {
     setUser(userData);
+    // Always store user data for persistence
+    tokenManager.setUserData(userData);
   };
 
   const logout = () => {
