@@ -3,7 +3,7 @@ import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
-const roles = ["vendor", "supplier", "admin"];
+const roles = ["vendor", "supplier"];
 
 const Login = ({ onSuccess, onClose }) => {
   const { t } = useTranslation();
