@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
+import MapPicker from "./MapPicker";
 
-const roles = ["vendor", "supplier", "admin"];
+const roles = ["vendor", "supplier"];
 
 const Login = ({ onSuccess, onClose }) => {
   const { t } = useTranslation();
@@ -22,6 +23,11 @@ const Login = ({ onSuccess, onClose }) => {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
+  const [location, setLocation] = useState(null); // [latitude, longitude]
+
+  const handleLocationSelect = (coordinates) => {
+    setLocation(coordinates);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -42,8 +48,8 @@ const Login = ({ onSuccess, onClose }) => {
   // Determine token from possible response shapes
   const token = response?.token || response?.data?.token || response?.user?.token || response?.accessToken || null;
   // Store token and user info
-  // Make supplier sessions persistent by default (so refreshing stays logged in)
-  const persist = rememberMe || response.user?.role === 'supplier';
+  // Make all sessions persistent by default (so refreshing stays logged in)
+  const persist = rememberMe || true;
   tokenManager.setToken(token, persist);
 
         // Fetch authoritative user data from backend (includes verification status)
@@ -76,6 +82,10 @@ const Login = ({ onSuccess, onClose }) => {
       setError(t('fillAllFields'));
       return;
     }
+    if (!location) {
+      setError('Please select your location on the map');
+      return;
+    }
     
     setIsLoading(true);
     setError("");
@@ -88,12 +98,14 @@ const Login = ({ onSuccess, onClose }) => {
         phone,
         role,
         address,
+        latitude: location[0],
+        longitude: location[1],
       });
 
       // Store token and user info
-      // For signup, persist by default if the chosen role is supplier
+      // For signup, persist by default for all roles
   const token = response?.token || response?.data?.token || response?.user?.token || response?.accessToken || null;
-  const signupPersist = rememberMe || role === 'supplier';
+  const signupPersist = rememberMe || true;
   tokenManager.setToken(token, signupPersist);
 
       // Fetch authoritative user data
@@ -160,14 +172,14 @@ const Login = ({ onSuccess, onClose }) => {
             <form onSubmit={handleSignup} className="flex flex-col gap-4 mt-2">
               <input
                 type="text"
-                placeholder={t('name')}
+                placeholder={t('Owner name')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
               <input
                 type="email"
-                placeholder={t('email')}
+                placeholder={t('Business email')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -181,17 +193,22 @@ const Login = ({ onSuccess, onClose }) => {
               />
               <input
                 type="tel"
-                placeholder={t('phone')}
+                placeholder={t('Business phone number')}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
               />
               <input
                 type="text"
-                placeholder={t('address') || 'Address'}
+                placeholder={t('Business address') || 'Business address'}
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
+              />
+              <MapPicker
+                onLocationSelect={handleLocationSelect}
+                initialLocation={location}
+                userRole={role}
               />
               <select
                 className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"

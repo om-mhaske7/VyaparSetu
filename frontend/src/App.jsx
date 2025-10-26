@@ -7,6 +7,7 @@ import Landing from "./components/Landing.jsx";
 import Supplier from "./components/Supplier.jsx";
 import Admin from "./components/Admin";
 import RoleRoute from "./components/RoleRoute.jsx";
+import LoginPage from "./components/LoginPage";
 import { AuthProvider } from "./context/AuthContext";
 import LanguageSwitcher from './components/languageSwitcher';
 
@@ -72,8 +73,16 @@ function App() {
             element={<Landing />}
           />
           <Route 
+            path="/login" 
+            element={<LoginPage />}
+          />
+          <Route 
             path="/home" 
-            element={<Home onAddToCart={handleAddToCart} />}
+            element={
+              <RoleRoute allowedRoles={['vendor']}>
+                <Home onAddToCart={handleAddToCart} />
+              </RoleRoute>
+            }
           />
           <Route 
             path="/supplier" 

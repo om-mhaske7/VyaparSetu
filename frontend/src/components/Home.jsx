@@ -81,7 +81,6 @@ function Home({ onAddToCart }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language;
   const [addedToCart, setAddedToCart] = useState(null);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -286,12 +285,6 @@ function Home({ onAddToCart }) {
   }, []);
 
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-      setTimeout(() => setShowLoginPrompt(false), 3000);
-      return;
-    }
-    
     onAddToCart(product);
     setAddedToCart(product.name);
     setTimeout(() => setAddedToCart(null), 2000);
@@ -349,15 +342,6 @@ function Home({ onAddToCart }) {
         </div>
       )}
       
-      {/* Login Prompt Notification */}
-      {showLoginPrompt && (
-        <div className="fixed top-20 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-bounce">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <span>{language === 'hi' ? 'कार्ट में जोड़ने के लिए लॉगिन करें' : 'Please login to add to cart'}</span>
-        </div>
-      )}
       
       {/* Hero Section with Search */}
       <div className="bg-gradient-to-br from-green-50 to-blue-50 py-10 sm:py-14 md:py-16 px-2 sm:px-4 md:px-8">
@@ -442,18 +426,17 @@ function Home({ onAddToCart }) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center">
             {filteredProducts.map((item) => {
-              const compact = Boolean(user && (user.role === 'supplier' || user.role === 'vendor'));
               return (
-                <div key={item.id} className={`bg-white rounded-lg shadow-sm w-full max-w-xs flex flex-col ${compact ? 'text-sm' : ''}`}>
+                <div key={item.id} className="bg-white rounded-lg shadow-sm w-full max-w-xs flex flex-col">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className={`rounded-t-lg w-full object-cover object-center ${compact ? 'h-28' : 'h-40 sm:h-48'}`}
+                    className="rounded-t-lg w-full object-cover object-center h-40 sm:h-48"
                   />
-                  <div className={`p-3 ${compact ? 'p-3' : 'p-4 sm:p-6'} flex flex-col gap-2 flex-1`}>
-                    <h2 className={`${compact ? 'text-sm' : 'text-lg sm:text-xl'} font-semibold break-words`}>{getTranslatedField(item, 'name', language)}</h2>
+                  <div className="p-4 sm:p-6 flex flex-col gap-2 flex-1">
+                    <h2 className="text-lg sm:text-xl font-semibold break-words">{getTranslatedField(item, 'name', language)}</h2>
                     <div className="flex items-center justify-between gap-2">
-                      <div className={`${compact ? 'text-green-700 text-lg font-bold' : 'text-green-700 text-xl sm:text-2xl font-bold'}`}>
+                      <div className="text-green-700 text-xl sm:text-2xl font-bold">
                         ₹{item.price} / {item.unit}
                       </div>
                       {item.verified && (
@@ -500,7 +483,7 @@ function Home({ onAddToCart }) {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleAddToCart(item)}
-                          className={`bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 font-semibold shadow transition duration-150 cursor-pointer ${compact ? 'min-w-[90px]' : 'min-w-[120px]'}`}
+                          className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 font-semibold shadow transition duration-150 cursor-pointer min-w-[120px]"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l1.4-7H6.6M7 13l-1.4 7h10.8L17 13M7 13V5a2 2 0 012-2h6a2 2 0 012 2v8" /></svg>
                           {t('addToCart')}

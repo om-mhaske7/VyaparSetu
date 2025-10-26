@@ -40,6 +40,14 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: "",
   },
+  latitude: {
+    type: Number,
+    required: false,
+  },
+  longitude: {
+    type: Number,
+    required: false,
+  },
 
   kycDocs: {
     type: [String], // Only for suppliers

@@ -63,6 +63,20 @@ const VerificationStatus = ({
     }
   }, [showVerificationForm]);
 
+  // Add effect to handle body overflow
+  useEffect(() => {
+    if (showVerificationForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showVerificationForm]);
+
   return (
     <>
       {verificationStatus === "pending" && (
@@ -157,7 +171,7 @@ const VerificationStatus = ({
         </div>
       )}
 
-      {/* Verification Form Modal */}
+      {/* Verification Form Modal - Updated with overflow handling */}
       {showVerificationForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
