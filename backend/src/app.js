@@ -8,8 +8,9 @@ const app = express();
 // and any Vercel-hosted subdomain (e.g. https://vyapaarsetu.vercel.app).
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173', // Vite dev server
-  process.env.FRONTEND_URL // Add your specific Vercel URL via environment variable
+  'http://localhost:5173',
+  'https://vyapaarsetu.vercel.app',
+  // process.env.FRONTEND_URL // Add your specific Vercel URL via environment variable
 ].filter(Boolean);
 
 const vercelOriginRegex = /https:\/\/[\w-]+\.vercel\.app(:\d+)?$/i;
