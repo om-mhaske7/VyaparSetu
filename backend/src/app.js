@@ -4,14 +4,28 @@ const cors = require("cors");
 const app = express();
 
 // Configure CORS properly for production
+// Allow explicit localhost dev origins, an exact FRONTEND_URL (set in env on Render),
+// and any Vercel-hosted subdomain (e.g. https://vyapaarsetu.vercel.app).
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173', // Vite dev server
+  process.env.FRONTEND_URL // Add your specific Vercel URL via environment variable
+].filter(Boolean);
+
+const vercelOriginRegex = /https:\/\/[\w-]+\.vercel\.app(:\d+)?$/i;
+
 const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:5173", // Vite dev server
-    "https://vendor-mitra-five.vercel.app", // Your Vercel domain (removed trailing slash)
-    "https://*.vercel.app", // Any Vercel subdomain
-    process.env.FRONTEND_URL // Add your specific Vercel URL
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // Allow non-browser (server-to-server) requests with no origin
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin) || vercelOriginRegex.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Not allowed
+    return callback(new Error('CORS policy: This origin is not allowed'), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
