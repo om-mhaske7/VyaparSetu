@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Move Leaflet zoom (+/-) controls to the right and keep above overlay UI */
+.leaflet-control-container {
+  z-index: 2000 !important; /* above search bar z-[1000] */
+}
+
+/* Move the top-left control group to the right side */
+.leaflet-top.leaflet-left {
+  left: auto !important;
+  right: 1rem !important; /* adjust horizontal offset */
+  top: 1rem !important;   /* adjust vertical offset if needed */
+}
+
+/* small vertical fine-tune for the zoom control */
+.leaflet-control-zoom {
+  margin-top: 0.25rem;
+}

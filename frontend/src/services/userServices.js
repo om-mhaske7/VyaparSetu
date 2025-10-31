@@ -32,3 +32,10 @@ export const uploadUpiQr = async (userId, file) => {
   });
   return res.data;
 };
+
+export const searchSuppliersByName = async (name) => {
+  const res = await API.get(`${API_BASE}/suppliers/search`, {
+    params: { name }
+  });
+  return res.data;
+};

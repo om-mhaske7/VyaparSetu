@@ -8,6 +8,7 @@ const {
   getVerificationStatusById,
   updateVerificationStatus,
   uploadUpiQr,
+  searchSuppliersByName,
 } = require("../controllers/userController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const upload = require("../utils/upload");
@@ -26,6 +27,7 @@ router.post(
 );
 
 router.get("/suppliers", authMiddleware, getVerifiedSuppliers);
+router.get("/suppliers/search", authMiddleware, searchSuppliersByName);
 
 router.get(
   "/verification-status/:id",

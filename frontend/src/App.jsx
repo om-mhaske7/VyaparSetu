@@ -14,6 +14,7 @@ import Profile from "./components/Profile.jsx";
 import Settings from "./components/Settings.jsx";
 import BundlesList from "./components/BundlesList.jsx";
 import BundleDetail from "./components/BundleDetail.jsx";
+import SupplierSearch from "./components/SupplierSearch.jsx";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -111,6 +112,14 @@ function App() {
             element={
               <RoleRoute allowedRoles={['supplier']}>
                 <Supplier />
+              </RoleRoute>
+            } 
+          />
+          <Route 
+            path="/search" 
+            element={
+              <RoleRoute allowedRoles={['vendor']}>
+                <SupplierSearch />
               </RoleRoute>
             } 
           />

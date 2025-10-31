@@ -177,6 +177,66 @@ const updateVerificationStatus = async (req, res) => {
   }
 };
 
+const searchSuppliersByName = async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Supplier name is required" });
+    }
+
+    const searchTerm = name.trim();
+
+    // First, find ALL suppliers matching the name (regardless of verification status)
+    // This helps with development/testing - you can see all suppliers
+    // In production, you might want to filter by verification status
+    const allSuppliers = await User.find({
+      role: "supplier",
+      name: { $regex: searchTerm, $options: "i" }
+    }).select("-password");
+
+    console.log(`Search for "${searchTerm}" found ${allSuppliers.length} total suppliers`);
+    
+    // Log details for debugging
+    allSuppliers.forEach(s => {
+      console.log(`  - ${s.name}: isVerified=${s.isVerified}, verificationStatus=${s.verificationStatus}, hasLatLng=${!!(s.latitude && s.longitude)}`);
+    });
+
+    // Filter verified suppliers (for production use - show only verified)
+    const verifiedSuppliers = allSuppliers.filter(s => 
+      s.isVerified === true || s.verificationStatus === "approved"
+    );
+
+    // For now, return ALL suppliers (including unverified) for development/testing
+    // To only show verified suppliers, change `allSuppliers` to `verifiedSuppliers` below
+    const suppliers = allSuppliers;
+
+    console.log(`Returning ${suppliers.length} suppliers (${verifiedSuppliers.length} verified)`);
+
+    // Filter to only return suppliers with valid coordinates for map display
+    const suppliersWithLocation = suppliers.filter(s => 
+      s.latitude != null && 
+      s.longitude != null && 
+      !isNaN(Number(s.latitude)) && 
+      !isNaN(Number(s.longitude))
+    );
+
+    // Return both suppliers with and without locations
+    // Frontend can display all in list, but only map those with coordinates
+    res.status(200).json({ 
+      success: true, 
+      suppliers,
+      suppliersWithLocation: suppliersWithLocation,
+      totalFound: suppliers.length,
+      withLocation: suppliersWithLocation.length,
+      verifiedCount: verifiedSuppliers.length
+    });
+  } catch (err) {
+    console.error("Error searching suppliers:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
 
 module.exports = {
   getUserProfile,
@@ -186,4 +246,5 @@ module.exports = {
   getVerifiedSuppliers,
   getVerificationStatusById,
   updateVerificationStatus,
+  searchSuppliersByName,
 };
