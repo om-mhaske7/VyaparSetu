@@ -5,6 +5,8 @@ const userRoutes = require("./userRoutes");
 const adminRoutes = require("./adminRoutes");
 const orderRoutes = require("./orderRoutes");
 const reviewRoutes = require("./reviewRoutes");
+const bundleRoutes = require("./bundleRoutes");
+const uploadRoutes = require("./uploadRoutes");
 
 const router = express.Router();
 
@@ -14,5 +16,7 @@ router.use('/users', userRoutes);
 router.use('/admin', adminRoutes);
 router.use("/orders", orderRoutes);
 router.use("/reviews", reviewRoutes);
+router.use("/bundles", bundleRoutes);
+router.use("/upload", uploadRoutes);
 
 module.exports = router;

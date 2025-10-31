@@ -49,6 +49,24 @@ const userSchema = new mongoose.Schema({
     required: false,
   },
 
+  // Payment and banking details (for both vendor and supplier)
+  upiId: {
+    type: String,
+    trim: true,
+    default: "",
+  },
+  upiQrCode: {
+    type: String, // URL/path to uploaded QR image
+    default: "",
+  },
+  bankDetails: {
+    accountHolderName: { type: String, trim: true, default: "" },
+    accountNumber: { type: String, trim: true, default: "" },
+    ifsc: { type: String, trim: true, default: "" },
+    bankName: { type: String, trim: true, default: "" },
+    branch: { type: String, trim: true, default: "" },
+  },
+
   kycDocs: {
     type: [String], // Only for suppliers
     default: [],

@@ -568,6 +568,65 @@ export const orderAPI = {
 
 };
 
+// Bundle API calls
+export const bundleAPI = {
+  create: async (bundleData) => {
+    const token = localStorage.getItem('authToken');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(`${API_BASE_URL}/bundles`, {
+      method: 'POST', headers, body: JSON.stringify(bundleData), mode: 'cors'
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+  mine: async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) throw new Error('Authentication required');
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const response = await fetch(`${API_BASE_URL}/bundles/mine`, { method: 'GET', headers, mode: 'cors' });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+  respond: async (bundleId, accept) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) throw new Error('Authentication required');
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const response = await fetch(`${API_BASE_URL}/bundles/${bundleId}/respond`, {
+      method: 'POST', headers, body: JSON.stringify({ accept }), mode: 'cors'
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+  publicList: async () => {
+    const response = await fetch(`${API_BASE_URL}/bundles/public`, { method: 'GET', mode: 'cors' });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+  getById: async (bundleId) => {
+    const response = await fetch(`${API_BASE_URL}/bundles/${bundleId}`, { method: 'GET', mode: 'cors' });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  }
+};
+
+export const uploadAPI = {
+  uploadImage: async (file) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) throw new Error('Authentication required');
+    const form = new FormData();
+    form.append('image', file);
+    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      mode: 'cors'
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  }
+};
+
 // Token management
 export const tokenManager = {
   // store token; if persist === true, also mark session persistence

@@ -5,7 +5,7 @@ const TabNavigation = ({ tab, setTab, showAddForm, setShowAddForm }) => {
     <>
       {/* Tabs */}
       <div className="flex justify-center gap-6 px-8">
-        {["Products", "Orders", "Dispatch"].map((t) => (
+        {["Products", "Bundles", "Orders", "Dispatch"].map((t) => (
           <button
             key={t}
             className={`px-8 py-2 rounded-t-lg font-medium transition-colors duration-200 ${tab === t ? "bg-white text-green-600 shadow" : "bg-transparent text-gray-500"}`}

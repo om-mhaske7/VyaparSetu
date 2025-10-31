@@ -6,6 +6,7 @@ import TabNavigation from "./Supplier/TabNavigation";
 import ProductCatalog from "./Supplier/ProductCatalog";
 import OrderManagement from "./Supplier/OrderManagement";
 import DispatchManagement from "./Supplier/DispatchManagement";
+import Bundles from "./Supplier/Bundles";
 import Toast from "./Supplier/Toast";
 import { useAuth } from "../context/AuthContext";
 import { tokenManager, productAPI, orderAPI } from "../services/api";
@@ -577,6 +578,9 @@ const Supplier = () => {
                 handleEditSave={handleEditSave}
                 handleEditCancel={handleEditCancel}
               />
+            )}
+            {tab === "Bundles" && (
+              <Bundles />
             )}
             {tab === "Orders" && (
               <OrderManagement

@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 exports.createOrder = async (req, res) => {
   try {
-    const { vendorId, supplierId, items, deliveryType } = req.body;
+    const { vendorId, supplierId, items, deliveryType, paymentMethod, paymentDetails } = req.body;
 
     if (
       !vendorId ||
@@ -55,6 +55,8 @@ exports.createOrder = async (req, res) => {
       items,
       totalPrice,
       deliveryType,
+      paymentMethod: paymentMethod || 'none',
+      paymentDetails: paymentDetails || {},
       status: "pending",
       orderedAt: new Date(),
       updatedAt: new Date(),
@@ -130,6 +132,8 @@ exports.getOrdersBySupplier = async (req, res) => {
         totalPrice: supplierTotalPrice,
         status: order.status,
         deliveryType: order.deliveryType,
+        paymentMethod: order.paymentMethod,
+        paymentDetails: order.paymentDetails,
         orderedAt: order.orderedAt,
         updatedAt: order.updatedAt,
       };
@@ -353,6 +357,8 @@ exports.getDispatchedOrdersForSupplier = async (req, res) => {
         totalPrice: supplierTotalPrice,
         status: order.status,
         deliveryType: order.deliveryType,
+        paymentMethod: order.paymentMethod,
+        paymentDetails: order.paymentDetails,
         orderedAt: order.orderedAt,
         updatedAt: order.updatedAt,
       };
@@ -412,6 +418,8 @@ exports.getPendingOrdersForSupplier = async (req, res) => {
         totalPrice: supplierTotalPrice,
         status: order.status,
         deliveryType: order.deliveryType,
+        paymentMethod: order.paymentMethod,
+        paymentDetails: order.paymentDetails,
         orderedAt: order.orderedAt,
         updatedAt: order.updatedAt,
       };
@@ -460,6 +468,8 @@ exports.getMyOrders = async (req, res) => {
         totalPrice: supplierTotalPrice,
         status: order.status,
         deliveryType: order.deliveryType,
+        paymentMethod: order.paymentMethod,
+        paymentDetails: order.paymentDetails,
         orderedAt: order.orderedAt,
         updatedAt: order.updatedAt,
       };

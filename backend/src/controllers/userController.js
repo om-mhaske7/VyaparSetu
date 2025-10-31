@@ -21,7 +21,17 @@ const getUserProfile = async (req, res) => {
 // PUT /users/:id
 const updateUserProfile = async (req, res) => {
   const userId = req.params.id;
-  const allowedUpdates = ["name", "phone", "kycDocs", "fssaiNumber"];
+  const allowedUpdates = [
+    "name",
+    "phone",
+    "kycDocs",
+    "fssaiNumber",
+    "upiId",
+    "bankDetails",
+    "address",
+    "latitude",
+    "longitude",
+  ];
   const updates = {};
 
   allowedUpdates.forEach((field) => {
@@ -71,6 +81,28 @@ const uploadKycDocs = async (req, res) => {
 
     res.json({ message: "KYC uploaded and verified", kycDocs: filePaths });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Upload UPI QR (single image), store path in user.upiQrCode
+const uploadUpiQr = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const filePath = `/uploads/kyc/${req.file.filename}`; // reuse kyc path storage
+    user.upiQrCode = filePath;
+    user.updatedAt = new Date();
+    await user.save();
+
+    res.json({ message: "UPI QR uploaded", upiQrCode: filePath });
+  } catch (err) {
+    console.error("Upload UPI QR error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -150,6 +182,7 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   uploadKycDocs,
+  uploadUpiQr,
   getVerifiedSuppliers,
   getVerificationStatusById,
   updateVerificationStatus,
