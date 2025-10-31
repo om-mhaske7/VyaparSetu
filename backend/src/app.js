@@ -36,7 +36,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 const path = require("path");
-app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
+// Serve uploads from backend/src/uploads correctly
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Add a root route to prevent 404 on /
 app.get("/", (req, res) => {

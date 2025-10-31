@@ -107,6 +107,16 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
   const [paymentStep, setPaymentStep] = useState('select'); // 'select' | 'upi'
   const [payerUpiId, setPayerUpiId] = useState('');
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [upiTxnId, setUpiTxnId] = useState('');
+  const [qrPreview, setQrPreview] = useState('');
+
+  const getFileUrl = (path) => {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const apiRoot = apiBase.replace(/\/api\/?$/, '');
+    return path.startsWith('/uploads') ? `${apiRoot}${path}` : path;
+  };
   
   // Helper: get supplier list from cart for payment info rendering
   const suppliersInCart = React.useMemo(() => {
@@ -119,13 +129,13 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
           supplierId: sid,
           supplierName: item.supplier?.name || item.supplier?.businessName || item.supplierName || item.supplier || 'Supplier',
           // Try multiple likely locations for UPI/QR the app might use
-          upiId: item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || '',
-          qrCode: item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || ''
+          upiId: item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || item.supplierPayment?.upiId || '',
+          qrCode: item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || item.supplierPayment?.upiQrCode || ''
         });
       } else {
         const s = map.get(sid);
-        s.upiId = s.upiId || item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || '';
-        s.qrCode = s.qrCode || item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || '';
+        s.upiId = s.upiId || (item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || item.supplierPayment?.upiId || '');
+        s.qrCode = s.qrCode || (item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || item.supplierPayment?.upiQrCode || '');
       }
     });
     return Array.from(map.values());
@@ -322,7 +332,8 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
           supplierId,
           items: itemsPayload,
           deliveryType: 'pickup',
-          paymentMethod
+          paymentMethod,
+          paymentDetails: paymentMethod === 'upi' ? { payerUpiId, transactionId: upiTxnId } : {}
         };
 
         return await orderAPI.placeOrder(orderData);
@@ -462,7 +473,9 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                             )}
                           </div>
                           {s.qrCode ? (
-                            <img src={s.qrCode} alt="UPI QR" className="w-20 h-20 object-contain rounded-md border bg-white" />
+                            <button type="button" onClick={() => setQrPreview(getFileUrl(s.qrCode))} className="focus:outline-none">
+                              <img src={getFileUrl(s.qrCode)} alt="UPI QR" className="w-20 h-20 object-contain rounded-md border bg-white hover:shadow" />
+                            </button>
                           ) : (
                             <div className="w-20 h-20 flex items-center justify-center text-xs text-gray-500 bg-white border rounded-md">No QR</div>
                           )}
@@ -479,7 +492,15 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                         onChange={(e) => setPayerUpiId(e.target.value)}
                         className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
-                      <div className="text-xs text-gray-500">Complete the payment in your UPI app, then confirm below.</div>
+                      <label className="text-sm font-medium text-gray-700">UPI Transaction ID</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., UPI txn/reference ID"
+                        value={upiTxnId}
+                        onChange={(e) => setUpiTxnId(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <div className="text-xs text-gray-500">Complete payment in your UPI app, then enter the transaction/reference ID and confirm.</div>
                     </div>
 
                     <button
@@ -530,6 +551,17 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qrPreview && (
+        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" onClick={() => setQrPreview('')}>
+          <div className="bg-white rounded-lg p-2 max-w-full" onClick={(e) => e.stopPropagation()}>
+            <img src={qrPreview} alt="UPI QR Preview" className="max-h-[80vh] max-w-[90vw] object-contain" />
+            <div className="text-center mt-2">
+              <button className="px-4 py-2 bg-gray-800 text-white rounded" onClick={() => setQrPreview('')}>Close</button>
             </div>
           </div>
         </div>

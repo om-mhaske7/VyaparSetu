@@ -160,6 +160,24 @@ const OrderManagement = ({ orders, handleAcceptOrder, handleRejectOrder, ordersL
               <div className="font-semibold text-lg">
                 Total Amount: {formatCurrency(order.totalPrice)}
               </div>
+              {/* Payment details for verification */}
+              <div className="text-sm text-gray-700 text-right mr-4">
+                {order.paymentMethod && order.paymentMethod !== 'none' && (
+                  <div>
+                    <div><span className="font-medium">Payment:</span> {order.paymentMethod.toUpperCase()}</div>
+                    {order.paymentMethod === 'upi' && (
+                      <>
+                        {order.paymentDetails?.transactionId && (
+                          <div><span className="font-medium">Txn ID:</span> {order.paymentDetails.transactionId}</div>
+                        )}
+                        {order.paymentDetails?.payerUpiId && (
+                          <div><span className="font-medium">Payer UPI:</span> {order.paymentDetails.payerUpiId}</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               
               {order.status === "pending" && (
                 <div className="flex gap-2">

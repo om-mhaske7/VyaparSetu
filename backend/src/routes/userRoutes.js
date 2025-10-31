@@ -7,6 +7,7 @@ const {
   getVerifiedSuppliers,
   getVerificationStatusById,
   updateVerificationStatus,
+  uploadUpiQr,
 } = require("../controllers/userController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const upload = require("../utils/upload");
@@ -35,6 +36,14 @@ router.patch(
   "/verification-status/:id",
   authMiddleware, // Optional: use role-based access control if needed
   updateVerificationStatus
+);
+
+// Upload UPI QR (single file field name: upiQr)
+router.post(
+  "/:id/upi-qr",
+  authMiddleware,
+  upload.single("upiQr"),
+  uploadUpiQr
 );
 
 module.exports = router;

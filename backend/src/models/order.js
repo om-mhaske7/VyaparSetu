@@ -28,6 +28,16 @@ const orderSchema = new mongoose.Schema({
     },
   ],
   totalPrice: { type: Number, required: true },
+  paymentMethod: {
+    type: String,
+    enum: ["cod", "upi", "none"],
+    default: "none",
+  },
+  paymentDetails: {
+    payerUpiId: { type: String, default: "" },
+    transactionId: { type: String, default: "" },
+    paidAt: { type: Date },
+  },
   status: {
     type: String,
     enum: ["pending", "accepted", "rejected", "dispatched", "delivered"],

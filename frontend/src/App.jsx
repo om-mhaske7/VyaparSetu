@@ -10,6 +10,8 @@ import RoleRoute from "./components/RoleRoute.jsx";
 import LoginPage from "./components/LoginPage";
 import { AuthProvider } from "./context/AuthContext";
 import LanguageSwitcher from './components/languageSwitcher';
+import Profile from "./components/Profile.jsx";
+import Settings from "./components/Settings.jsx";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -75,6 +77,22 @@ function App() {
           <Route 
             path="/login" 
             element={<LoginPage />}
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <RoleRoute allowedRoles={['vendor','supplier','admin']}>
+                <Profile />
+              </RoleRoute>
+            }
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <RoleRoute allowedRoles={['vendor','supplier','admin']}>
+                <Settings />
+              </RoleRoute>
+            }
           />
           <Route 
             path="/home" 

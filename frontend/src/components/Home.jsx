@@ -51,6 +51,10 @@ function mapApiProductToFrontend(apiProduct) {
     price: apiProduct.pricePerUnit,
     supplier: apiProduct.supplierId?.name || 'Unknown Supplier',
     supplierId: apiProduct.supplierId?._id || apiProduct.supplierId, // Add supplierId
+    supplierPayment: {
+      upiId: apiProduct.supplierId?.upiId || '',
+      upiQrCode: apiProduct.supplierId?.upiQrCode || ''
+    },
     vendorId: apiProduct.vendorId || null, // Add vendorId if available
     rating: 4.2, // Default rating since API doesn't provide this yet
     ratingCount: Math.floor(Math.random() * 200) + 50, // Random count for demo
