@@ -12,6 +12,8 @@ import { AuthProvider } from "./context/AuthContext";
 import LanguageSwitcher from './components/languageSwitcher';
 import Profile from "./components/Profile.jsx";
 import Settings from "./components/Settings.jsx";
+import BundlesList from "./components/BundlesList.jsx";
+import BundleDetail from "./components/BundleDetail.jsx";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -102,6 +104,8 @@ function App() {
               </RoleRoute>
             }
           />
+          <Route path="/bundles" element={<BundlesList />} />
+          <Route path="/bundles/:id" element={<BundleDetail />} />
           <Route 
             path="/supplier" 
             element={

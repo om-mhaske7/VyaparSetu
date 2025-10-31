@@ -38,6 +38,16 @@ const orderSchema = new mongoose.Schema({
     transactionId: { type: String, default: "" },
     paidAt: { type: Date },
   },
+  // Bundle purchase fields
+  bundleId: { type: mongoose.Schema.Types.ObjectId, ref: "Bundle" },
+  paymentReceiverSupplierId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  revenueSplits: [
+    {
+      supplierId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      percent: { type: Number, required: true, min: 0, max: 100 },
+      amount: { type: Number, required: true, min: 0 },
+    },
+  ],
   status: {
     type: String,
     enum: ["pending", "accepted", "rejected", "dispatched", "delivered"],

@@ -2,11 +2,14 @@ const Review = require("../models/review");
 
 exports.createReview = async (req, res) => {
   try {
-    const { vendorId, supplierId, productId, rating, comment } = req.body;
+    const { vendorId, supplierId, productId, bundleId, rating, comment } = req.body;
 
-    // Validation
-    if (!vendorId || !supplierId || !productId || !rating) {
+    // Validation: require productId XOR bundleId
+    if (!vendorId || !supplierId || !rating || (!productId && !bundleId)) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (productId && bundleId) {
+      return res.status(400).json({ message: "Provide either productId or bundleId, not both" });
     }
 
     if (rating < 1 || rating > 5) {
@@ -20,6 +23,7 @@ exports.createReview = async (req, res) => {
       vendorId,
       supplierId,
       productId,
+      bundleId,
       rating,
       comment,
     });
@@ -67,6 +71,21 @@ exports.getReviewsByProductId = async (req, res) => {
     res.status(200).json(reviews);
   } catch (error) {
     console.error("Error fetching reviews:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getReviewsByBundleId = async (req, res) => {
+  try {
+    const { bundleId } = req.params;
+
+    const reviews = await Review.find({ bundleId })
+      .populate("vendorId", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error("Error fetching bundle reviews:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
