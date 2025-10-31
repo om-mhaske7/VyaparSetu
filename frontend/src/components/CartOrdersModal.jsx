@@ -102,22 +102,26 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     fetchUserOrders();
   }, [activeTab, user]);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  
   // Handler for placing order
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) return;
-    setLoading(true);
     
     try {
-      // Validate against available stock before placing order (also disable at UI)
+      // Validate against available stock before showing payment options
       const outOfStock = cartItems.find(item => {
         const available = Number(item.inStock ?? item.stockQty ?? 0);
         return available > 0 ? Number(item.quantity) > available : Number(item.quantity) > 0;
       });
       if (outOfStock) {
         alert(`${outOfStock.name}: only ${outOfStock.inStock ?? outOfStock.stockQty ?? 0} ${outOfStock.unit || ''} available. Reduce quantity before placing order.`);
-        setLoading(false);
         return;
       }
+      
+      // Show payment modal instead of directly placing order
+      setShowPaymentModal(true);
 
       // Generate a valid MongoDB ObjectId format for vendorId if not available
       const generateObjectId = () => {
@@ -236,8 +240,151 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     return available > 0 ? item.quantity >= available : false;
   };
 
+  const processOrder = async (paymentMethod) => {
+    setLoading(true);
+    try {
+      // Generate a valid MongoDB ObjectId format for vendorId if not available
+      const generateObjectId = () => {
+        return '507f1f77bcf86cd799439011'; // Valid demo ObjectId
+      };
+      
+      const vendorId = user?._id || user?.id || user?.vendorId || generateObjectId();
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      const finalVendorId = objectIdRegex.test(vendorId) ? vendorId : generateObjectId();
+      
+      // Group cart items by supplier
+      const itemsBySupplier = cartItems.reduce((groups, item) => {
+        const supplierId = item.supplierId;
+        if (!supplierId) {
+          console.error('Item missing supplierId:', item);
+          return groups;
+        }
+        
+        if (!groups[supplierId]) {
+          groups[supplierId] = [];
+        }
+        groups[supplierId].push(item);
+        return groups;
+      }, {});
+      
+      // Create separate orders for each supplier
+      const orderPromises = Object.entries(itemsBySupplier).map(async ([supplierId, supplierItems]) => {
+        const itemsPayload = supplierItems.map(item => {
+          const productId = item._id || item.id || (item.productId && (item.productId._id || item.productId));
+          const supplierIdForItem = item.supplierId || item.supplier?._id || item.supplier;
+          let unitPrice = item.unitPrice ?? item.price;
+          if (typeof unitPrice === 'string') {
+            unitPrice = Number(unitPrice.toString().replace(/[^0-9.-]+/g, '')) || 0;
+          }
+          return {
+            productId,
+            supplierId: supplierIdForItem,
+            quantity: item.quantity,
+            unitPrice,
+            paymentMethod
+          };
+        });
+
+        const orderData = {
+          vendorId: finalVendorId,
+          supplierId,
+          items: itemsPayload,
+          deliveryType: 'pickup',
+          paymentMethod
+        };
+
+        return await orderAPI.placeOrder(orderData);
+      });
+      
+      const results = await Promise.all(orderPromises);
+      const orderCount = results.length;
+      alert(`${orderCount} order${orderCount > 1 ? 's' : ''} placed successfully!`);
+      
+      if (onCheckout) {
+        onCheckout();
+      }
+      
+      setActiveTab('orders');
+      setShowPaymentModal(false);
+      setLoading(false);
+      
+      // Refresh orders
+      if (user) {
+        try {
+          const vendorIdRefresh = user._id || user.id || user.vendorId;
+          if (vendorIdRefresh) {
+            const orders = await orderAPI.getVendorOrders(vendorIdRefresh);
+            setUserOrders(orders);
+          }
+        } catch (error) {
+          console.error('Error refreshing orders:', error);
+        }
+      }
+      
+    } catch (error) {
+      alert('Order failed: ' + error.message);
+      setLoading(false);
+      setShowPaymentModal(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-xl font-bold text-gray-800">Select Payment Method</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => processOrder('cod')}
+                className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-between"
+              >
+                <span className="font-semibold">Cash on Delivery</span>
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </button>
+              
+              <div className="relative">
+                <button
+                  onClick={() => processOrder('upi')}
+                  disabled={!cartItems.every(item => item.supplier?.upiId || item.supplier?.qrCode)}
+                  className={`w-full py-4 px-6 rounded-lg flex items-center justify-between ${
+                    cartItems.every(item => item.supplier?.upiId || item.supplier?.qrCode)
+                      ? 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-gray-100 opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <span className="font-semibold">UPI Payment</span>
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                {!cartItems.every(item => item.supplier?.upiId || item.supplier?.qrCode) && (
+                  <span className="absolute -bottom-5 left-0 text-xs text-red-500">
+                    Not available for some suppliers
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-between mt-6 pt-4 border-t">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <div className="text-right">
+                <div className="text-lg font-bold text-green-600">₹{totalPrice}</div>
+                <div className="text-sm text-gray-500">Total Amount</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-green-50 sticky top-0 z-10">
         <div className="flex gap-2">
