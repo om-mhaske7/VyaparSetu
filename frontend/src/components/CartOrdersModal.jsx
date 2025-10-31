@@ -102,22 +102,58 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     fetchUserOrders();
   }, [activeTab, user]);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [paymentStep, setPaymentStep] = useState('select'); // 'select' | 'upi'
+  const [payerUpiId, setPayerUpiId] = useState('');
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  
+  // Helper: get supplier list from cart for payment info rendering
+  const suppliersInCart = React.useMemo(() => {
+    const map = new Map();
+    cartItems.forEach((item) => {
+      const sid = item.supplierId || item.supplier?._id || item.supplier;
+      if (!sid) return;
+      if (!map.has(sid)) {
+        map.set(sid, {
+          supplierId: sid,
+          supplierName: item.supplier?.name || item.supplier?.businessName || item.supplierName || item.supplier || 'Supplier',
+          // Try multiple likely locations for UPI/QR the app might use
+          upiId: item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || '',
+          qrCode: item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || ''
+        });
+      } else {
+        const s = map.get(sid);
+        s.upiId = s.upiId || item.supplier?.upiId || item.supplierUpi || item.upiId || item.supplierId?.upiId || '';
+        s.qrCode = s.qrCode || item.supplier?.qrCode || item.supplierQr || item.qrCode || item.supplierId?.qrCode || '';
+      }
+    });
+    return Array.from(map.values());
+  }, [cartItems]);
+
+  const isUpiAvailableForAll = suppliersInCart.length > 0 && suppliersInCart.every(s => Boolean(s.upiId || s.qrCode));
+  
   // Handler for placing order
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) return;
-    setLoading(true);
     
     try {
-      // Validate against available stock before placing order (also disable at UI)
+      // Validate against available stock before showing payment options
       const outOfStock = cartItems.find(item => {
         const available = Number(item.inStock ?? item.stockQty ?? 0);
         return available > 0 ? Number(item.quantity) > available : Number(item.quantity) > 0;
       });
       if (outOfStock) {
         alert(`${outOfStock.name}: only ${outOfStock.inStock ?? outOfStock.stockQty ?? 0} ${outOfStock.unit || ''} available. Reduce quantity before placing order.`);
-        setLoading(false);
         return;
       }
+      
+      // Show payment modal instead of directly placing order
+      setSelectedPaymentMethod(null);
+      setPaymentStep('select');
+      setPayerUpiId('');
+      setShowPaymentModal(true);
+      return; // Stop here; actual order placement happens after method selection
 
       // Generate a valid MongoDB ObjectId format for vendorId if not available
       const generateObjectId = () => {
@@ -236,8 +272,269 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
     return available > 0 ? item.quantity >= available : false;
   };
 
+  const processOrder = async (paymentMethod) => {
+    setLoading(true);
+    try {
+      // Generate a valid MongoDB ObjectId format for vendorId if not available
+      const generateObjectId = () => {
+        return '507f1f77bcf86cd799439011'; // Valid demo ObjectId
+      };
+      
+      const vendorId = user?._id || user?.id || user?.vendorId || generateObjectId();
+      const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+      const finalVendorId = objectIdRegex.test(vendorId) ? vendorId : generateObjectId();
+      
+      // Group cart items by supplier
+      const itemsBySupplier = cartItems.reduce((groups, item) => {
+        const supplierId = item.supplierId;
+        if (!supplierId) {
+          console.error('Item missing supplierId:', item);
+          return groups;
+        }
+        
+        if (!groups[supplierId]) {
+          groups[supplierId] = [];
+        }
+        groups[supplierId].push(item);
+        return groups;
+      }, {});
+      
+      // Create separate orders for each supplier
+      const orderPromises = Object.entries(itemsBySupplier).map(async ([supplierId, supplierItems]) => {
+        const itemsPayload = supplierItems.map(item => {
+          const productId = item._id || item.id || (item.productId && (item.productId._id || item.productId));
+          const supplierIdForItem = item.supplierId || item.supplier?._id || item.supplier;
+          let unitPrice = item.unitPrice ?? item.price;
+          if (typeof unitPrice === 'string') {
+            unitPrice = Number(unitPrice.toString().replace(/[^0-9.-]+/g, '')) || 0;
+          }
+          return {
+            productId,
+            supplierId: supplierIdForItem,
+            quantity: item.quantity,
+            unitPrice,
+            paymentMethod
+          };
+        });
+
+        const orderData = {
+          vendorId: finalVendorId,
+          supplierId,
+          items: itemsPayload,
+          deliveryType: 'pickup',
+          paymentMethod
+        };
+
+        return await orderAPI.placeOrder(orderData);
+      });
+      
+      const results = await Promise.all(orderPromises);
+      const orderCount = results.length;
+      alert(`${orderCount} order${orderCount > 1 ? 's' : ''} placed successfully!`);
+      
+      if (onCheckout) {
+        onCheckout();
+      }
+      
+      setActiveTab('orders');
+      setShowPaymentModal(false);
+      setLoading(false);
+      
+      // Refresh orders
+      if (user) {
+        try {
+          const vendorIdRefresh = user._id || user.id || user.vendorId;
+          if (vendorIdRefresh) {
+            const orders = await orderAPI.getVendorOrders(vendorIdRefresh);
+            setUserOrders(orders);
+          }
+        } catch (error) {
+          console.error('Error refreshing orders:', error);
+        }
+      }
+      
+    } catch (error) {
+      alert('Order failed: ' + error.message);
+      setLoading(false);
+      setShowPaymentModal(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-xl">
+            {/* Razorpay-like header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-md p-2">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 1.343-3 3v1a3 3 0 003 3 3 3 0 003-3v-1a3 3 0 00-3-3z" /></svg>
+                </div>
+                <div>
+                  <div className="text-white font-semibold">Secure Checkout</div>
+                  <div className="text-white/80 text-xs">UPI/COD • SSL Encrypted</div>
+                </div>
+              </div>
+              <button onClick={() => setShowPaymentModal(false)} className="text-white/90 hover:text-white">✕</button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {paymentStep === 'select' && (
+                <>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Select Payment Method</h3>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        setSelectedPaymentMethod('cod');
+                        setPaymentStep('cod');
+                      }}
+                      className="w-full py-4 px-6 bg-gray-50 hover:bg-gray-100 border rounded-xl flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold">Cash on Delivery</div>
+                          <div className="text-xs text-gray-500">Pay in cash at pickup/delivery</div>
+                        </div>
+                      </div>
+                      <span className="text-gray-700 font-medium">→</span>
+                    </button>
+
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          setSelectedPaymentMethod('upi');
+                          setPaymentStep('upi');
+                        }}
+                        disabled={!isUpiAvailableForAll}
+                        className={`w-full py-4 px-6 border rounded-xl flex items-center justify-between ${
+                          isUpiAvailableForAll ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-50 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div>
+                            <div className="font-semibold">UPI</div>
+                            <div className="text-xs text-gray-500">Pay via any UPI app</div>
+                          </div>
+                        </div>
+                        <span className="text-gray-700 font-medium">→</span>
+                      </button>
+                      {!isUpiAvailableForAll && (
+                        <span className="absolute -bottom-5 left-0 text-xs text-red-500">UPI not available for some suppliers</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between mt-6 pt-4 border-t">
+                    <div className="text-right ml-auto">
+                      <div className="text-xl font-bold text-green-600">₹{totalPrice}</div>
+                      <div className="text-xs text-gray-500">Total Payable</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {paymentStep === 'upi' && (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-gray-800">Pay via UPI</h3>
+                    <button onClick={() => setPaymentStep('select')} className="text-sm text-gray-500 hover:text-gray-700">← Change</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {suppliersInCart.map((s) => (
+                      <div key={s.supplierId} className="border rounded-xl p-4 bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-gray-800">{s.supplierName}</div>
+                            {s.upiId ? (
+                              <div className="text-xs text-gray-600">UPI ID: <span className="font-medium">{s.upiId}</span></div>
+                            ) : (
+                              <div className="text-xs text-red-500">UPI ID not available</div>
+                            )}
+                          </div>
+                          {s.qrCode ? (
+                            <img src={s.qrCode} alt="UPI QR" className="w-20 h-20 object-contain rounded-md border bg-white" />
+                          ) : (
+                            <div className="w-20 h-20 flex items-center justify-center text-xs text-gray-500 bg-white border rounded-md">No QR</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Your UPI ID (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., username@upi"
+                        value={payerUpiId}
+                        onChange={(e) => setPayerUpiId(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <div className="text-xs text-gray-500">Complete the payment in your UPI app, then confirm below.</div>
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          setConfirmingPayment(true);
+                          await processOrder('upi');
+                        } finally {
+                          setConfirmingPayment(false);
+                        }
+                      }}
+                      className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold disabled:opacity-60"
+                      disabled={!isUpiAvailableForAll || confirmingPayment}
+                    >
+                      {confirmingPayment ? 'Confirming…' : 'I have completed UPI payment'}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {paymentStep === 'cod' && (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-gray-800">Cash on Delivery</h3>
+                    <button onClick={() => setPaymentStep('select')} className="text-sm text-gray-500 hover:text-gray-700">← Change</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="border rounded-xl p-4 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-gray-800">Pay at delivery/pickup</div>
+                          <div className="text-xs text-gray-600">No online payment required now</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-green-600">₹{totalPrice}</div>
+                          <div className="text-xs text-gray-500">Total</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => processOrder('cod')}
+                      className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+                    >
+                      Place Order (COD)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-green-50 sticky top-0 z-10">
         <div className="flex gap-2">
@@ -341,7 +638,7 @@ const CartOrdersModal = ({ cartItems, myOrders, onClose, onRemoveItem, onUpdateQ
                       disabled={cartItems.length === 0 || loading || cartItems.some(i => Number(i.quantity) > Number(i.inStock ?? i.stockQty ?? 0))}
                       title={cartItems.some(i => Number(i.quantity) > Number(i.inStock ?? i.stockQty ?? 0)) ? "Reduce quantities to match supplier stock" : undefined}
                     >
-                      {loading ? 'Placing Order...' : 'Place Order'}
+                      {loading ? 'Processing...' : 'Proceed to Payment'}
                     </button>
                   </div>
                 </div>
