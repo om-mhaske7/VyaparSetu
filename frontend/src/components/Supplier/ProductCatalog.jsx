@@ -8,7 +8,9 @@ const ProductCatalog = ({
   handleEditClick,
   handleEditChange,
   handleEditSave,
-  handleEditCancel
+  handleEditCancel,
+  handleImageChange,
+  handleDeleteProduct
 }) => {
   if (loading) {
     return (
@@ -57,21 +59,69 @@ const ProductCatalog = ({
             {products.map((p, idx) => (
               <tr key={p._id || p.name || idx} className="border-b last:border-b-0">
                 <td className="py-2 px-1 sm:px-2">
-                  {p.image ? (
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-200 rounded-lg border flex items-center justify-center">
-                      <span className="text-gray-400 text-xs">No Image</span>
+                  {editIndex === idx ? (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      {editProduct.image ? (
+                        <img
+                          src={editProduct.image}
+                          alt="Preview"
+                          className="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border cursor-pointer hover:opacity-75"
+                        />
+                      ) : p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border cursor-pointer hover:opacity-75"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-200 rounded-lg border flex items-center justify-center cursor-pointer hover:bg-gray-300">
+                          <span className="text-gray-400 text-xs">Click to upload</span>
+                        </div>
+                      )}
+                      <div className="text-[8px] sm:text-[10px] text-blue-600 mt-1">Click to change</div>
                     </div>
+                  ) : (
+                    p.image ? (
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="h-10 w-10 sm:h-12 sm:w-12 object-cover rounded-lg border"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-200 rounded-lg border flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">No Image</span>
+                      </div>
+                    )
                   )}
                 </td>
                 <td className="py-2 px-1 sm:px-2">
-                  <div className="font-semibold text-gray-800 text-xs sm:text-sm">{p.name}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-500">{p.desc}</div>
+                  {editIndex === idx ? (
+                    <div>
+                      <input
+                        className="border rounded px-1 sm:px-2 py-1 w-full text-xs sm:text-sm mb-1"
+                        name="name"
+                        value={editProduct.name}
+                        onChange={handleEditChange}
+                      />
+                      <textarea
+                        className="border rounded px-1 sm:px-2 py-1 w-full text-xs sm:text-sm"
+                        name="desc"
+                        value={editProduct.desc}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-semibold text-gray-800 text-xs sm:text-sm">{p.name}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500">{p.desc}</div>
+                    </>
+                  )}
                 </td>
                 <td className="px-1 sm:px-2">
                   {editIndex === idx ? (
@@ -135,12 +185,15 @@ const ProductCatalog = ({
                 </td>
                 <td className="px-1 sm:px-2">
                   {editIndex === idx ? (
-                    <>
-                      <button className="bg-green-600 text-white px-2 sm:px-3 py-1 rounded mr-1 sm:mr-2 text-xs sm:text-sm" onClick={handleEditSave}>Save</button>
-                      <button className="bg-gray-300 text-gray-800 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm" onClick={handleEditCancel}>Cancel</button>
-                    </>
+                    <div className="flex flex-col gap-1">
+                      <button className="bg-green-600 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm w-full" onClick={handleEditSave}>Save</button>
+                      <button className="bg-gray-300 text-gray-800 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm w-full" onClick={handleEditCancel}>Cancel</button>
+                    </div>
                   ) : (
-                    <button className="border px-2 sm:px-3 py-1 rounded hover:bg-gray-100 transition text-xs sm:text-sm" onClick={() => handleEditClick(idx)}>Edit</button>
+                    <div className="flex flex-col gap-1">
+                      <button className="border px-2 sm:px-3 py-1 rounded hover:bg-gray-100 transition text-xs sm:text-sm w-full" onClick={() => handleEditClick(idx)}>Edit</button>
+                      <button className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-red-700 transition text-xs sm:text-sm w-full" onClick={() => handleDeleteProduct(idx)}>Delete</button>
+                    </div>
                   )}
                 </td>
               </tr>

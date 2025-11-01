@@ -196,19 +196,90 @@ const Supplier = () => {
     const product = products[idx];
     setEditIndex(idx);
     setEditProduct({
+      name: product.name,
       category: product.category || "General",
       price: product.price,
       stock: product.stock,
       status: product.status,
       desc: product.desc,
       pricePerUnit: product.pricePerUnit,
-      stockQty: product.stockQty
+      stockQty: product.stockQty,
+      image: product.image || ""
     });
   };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditProduct((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setShowToast({ type: "error", message: "Please select a valid image file" });
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setShowToast({ type: "error", message: "Image size should be less than 2MB" });
+        return;
+      }
+
+      // Create image element to resize
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas for resizing
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate new dimensions (max 800x600)
+        const maxWidth = 800;
+        const maxHeight = 600;
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        // Set canvas dimensions and draw resized image
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to base64 with compression
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+        
+        // Check if compressed image is still too large (max 500KB base64)
+        if (compressedBase64.length > 500 * 1024) {
+          setShowToast({ type: "error", message: "Image is still too large after compression. Please choose a smaller image." });
+          return;
+        }
+        
+        setEditProduct((prev) => ({ ...prev, image: compressedBase64 }));
+      };
+      
+      img.onerror = () => {
+        setShowToast({ type: "error", message: "Failed to load image. Please try another file." });
+      };
+      
+      // Load the image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleEditSave = async () => {
@@ -223,7 +294,9 @@ const Supplier = () => {
 
       // Prepare update data - map UI fields back to API format
       const updateData = {
+        name: editProduct.name,
         description: editProduct.desc || productToUpdate.desc,
+        image: editProduct.image || productToUpdate.image,
         pricePerUnit: parseFloat(editProduct.price?.replace('₹', '') || editProduct.pricePerUnit || productToUpdate.pricePerUnit),
         stockQty: parseInt(editProduct.stock || editProduct.stockQty || productToUpdate.stockQty),
         isActive: editProduct.status === "available"
@@ -260,6 +333,45 @@ const Supplier = () => {
   const handleEditCancel = () => {
     setEditIndex(null);
     setEditProduct(null);
+  };
+
+  const handleDeleteProduct = async (idx) => {
+    try {
+      const product = products[idx];
+      const token = tokenManager.getToken();
+
+      if (!token) {
+        setShowToast({ type: "error", message: "Please log in to delete products." });
+        return;
+      }
+
+      // Confirm deletion
+      const confirmed = window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`);
+      if (!confirmed) {
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/prod/delete-product/${product._id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        setShowToast({ type: "error", message: errorData.error || "Failed to delete product" });
+        return;
+      }
+
+      // Refresh the product list
+      await fetchProducts();
+      setShowToast({ type: "success", message: "Product deleted successfully!" });
+
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      setShowToast({ type: "error", message: "Failed to delete product" });
+    }
   };
 
   const handleFormChange = (e) => {
@@ -591,6 +703,8 @@ const Supplier = () => {
                 handleEditChange={handleEditChange}
                 handleEditSave={handleEditSave}
                 handleEditCancel={handleEditCancel}
+                handleImageChange={handleImageChange}
+                handleDeleteProduct={handleDeleteProduct}
               />
             )}
             {tab === "Bundles" && (
