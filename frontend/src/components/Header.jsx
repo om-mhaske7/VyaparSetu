@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaShoppingCart, FaGlobeAsia, FaStar, FaChevronDown } from "react-icons/fa";
+import { FaShoppingCart, FaStar } from "react-icons/fa";
 import { User } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import Login from "../auth/Login";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleTranslate from "./GoogleTranslate";
 
 const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
-  const { t, i18n } = useTranslation();
-  const language = i18n.language;
   const [showLogin, setShowLogin] = useState(false);
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const dropdownRef = useRef(null);
   const profileRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,9 +16,6 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowLanguageDropdown(false);
-      }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setShowProfileDropdown(false);
       }
@@ -35,23 +28,6 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   }, []);
 
   const handleLoginClick = () => setShowLogin(true);
-
-  const languageOptions = [
-    { code: 'en', name: 'English' },
-    { code: 'hi', name: 'हिंदी' },
-    { code: 'gu', name: 'ગુજરાતી' },
-    { code: 'mr', name: 'मराठी' }
-  ];
-
-  const getCurrentLanguageName = () => {
-    const currentLang = languageOptions.find(lang => lang.code === language);
-    return currentLang ? currentLang.name : 'English';
-  };
-
-  const handleLanguageChange = (langCode) => {
-    i18n.changeLanguage(langCode);
-    setShowLanguageDropdown(false);
-  };
 
   const handleLoginSuccess = (userData) => {
     login(userData);
@@ -81,16 +57,14 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
 
   // Role-specific nav items
   const vendorNav = [
-    { label: t('Home') || 'Home', path: '/home' },
-    { label: t('Trending') || 'Trending', path: '/trending' },
-    { label: t('Suppliers') || 'Suppliers', path: '/search' },
-    //{ label: t('Chat') || 'Chat', path: '/chat' }, // Add this line
+    { label: 'Home', path: '/home' },
+    { label: 'Trending', path: '/trending' },
+    { label: 'Suppliers', path: '/search' },
   ];
   const supplierNav = [
-    { label: t('Dashboard') || 'Dashboard', path: '/supplier' },
-    { label: t('Analytics') || 'Analytics', path: '/analyze' },
-    { label: t('Maps') || 'Maps', path: '/maps' },
-    //{ label: t('Chat') || 'Chat', path: '/chat' }, // Add this line
+    { label: 'Dashboard', path: '/supplier' },
+    { label: 'Analytics', path: '/analyze' },
+    { label: 'Maps', path: '/maps' },
   ];
   const navItems = user?.role === 'vendor' ? vendorNav : user?.role === 'supplier' ? supplierNav : [];
 
@@ -108,7 +82,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
           </span>
           <div>
             <div className="text-lg sm:text-2xl font-bold text-green-600">
-              {t('title') || 'VyapaarSetu'}
+              VyapaarSetu
             </div>
           </div>
         </div>
@@ -134,38 +108,15 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
 
         {/* Right: Language Dropdown, Login/Signup or User Info/Cart/Profile */}
         <div className="flex items-center gap-2 sm:gap-1">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              className="flex items-center bg-gray-50 border rounded-lg px-2 py-2 hover:bg-gray-100 transition text-sm"
-              onClick={() => { setShowLanguageDropdown(!showLanguageDropdown); setShowProfileDropdown(false); }}
-            >
-              <FaGlobeAsia className="mr-2 text-gray-500" />
-              <span className="font-medium text-gray-700">{getCurrentLanguageName()}</span>
-              <FaChevronDown className={`ml-2 text-gray-500 transition-transform ${showLanguageDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            {showLanguageDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] z-50">
-                {languageOptions.map((lang) => (
-                  <button
-                    key={lang.code}
-                    className={`w-full text-left px-3 py-2 hover:bg-gray-100 transition text-sm ${
-                      language === lang.code ? 'bg-green-50 text-green-600 font-medium' : 'text-gray-700'
-                    }`}
-                    onClick={() => handleLanguageChange(lang.code)}
-                  >
-                    {lang.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Google Translate */}
+          <GoogleTranslate />
 
           {!user && !isLoading && (
             <button
               className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg text-sm"
               onClick={handleLoginClick}
             >
-              {t('loginSignup')}
+              Login / Signup
             </button>
           )}
           {isLoading && (
@@ -183,7 +134,7 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                   }`}
                 >
                   <FaShoppingCart className={`text-lg transition-transform ${cartCount > 0 ? 'scale-110' : ''}`} />
-                  <span>{t('cart')} ({cartCount})</span>
+                  <span>Cart ({cartCount})</span>
                   {cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                       {cartCount > 99 ? '99+' : cartCount}
@@ -213,21 +164,21 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
                     </div>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
-                      onClick={() => {(false); navigate('/profile'); }}
+                      onClick={() => { setShowProfileDropdown(false); navigate('/profile'); }}
                     >
-                      {t('Profile') || 'Profile'}
+                      Profile
                     </button>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
                       onClick={() => { setShowProfileDropdown(false); navigate('/settings'); }}
                     >
-                      {t('Settings') || 'Settings'}
+                      Settings
                     </button>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
                       onClick={handleLogout}
                     >
-                      {t('logout') || 'Logout'}
+                      Logout
                     </button>
                   </div>
                 )}

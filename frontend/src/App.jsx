@@ -9,7 +9,6 @@ import Admin from "./components/Admin";
 import RoleRoute from "./components/RoleRoute.jsx";
 import LoginPage from "./components/LoginPage";
 import { AuthProvider } from "./context/AuthContext";
-import LanguageSwitcher from './components/languageSwitcher';
 import Profile from "./components/Profile.jsx";
 import Settings from "./components/Settings.jsx";
 import BundlesList from "./components/BundlesList.jsx";
