@@ -97,9 +97,10 @@ const GoogleTranslate = () => {
       <button
         id="translateToggle"
         onClick={() => setShowDropdown((prev) => !prev)}
-        className="flex items-center bg-gray-50 border rounded-lg px-2 py-2 hover:bg-gray-100 transition text-sm text-gray-700"
+        className="flex items-center bg-gray-50 border rounded-lg px-1.5 sm:px-2 py-1.5 sm:py-2 hover:bg-gray-100 transition text-xs sm:text-sm text-gray-700 whitespace-nowrap"
       >
-        Translate
+        <span className="hidden sm:inline">Translate</span>
+        <span className="sm:hidden">🌐</span>
       </button>
 
       {/* Our Custom Dropdown */}
