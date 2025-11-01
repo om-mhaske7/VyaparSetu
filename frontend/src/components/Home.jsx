@@ -27,40 +27,58 @@ function getTranslatedField(item, field, language) {
   return item.translations?.[language]?.[field] || item[field];
 }
 
-function RatingStars({ value }) {
-  const fullStars = Math.floor(value);
-  const halfStar = value % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+// Format distance display
+function formatDistance(distance) {
+  if (!distance) return 'Distance not available';
+  if (distance < 1) {
+    return `${(distance * 1000).toFixed(0)} m`;
+  }
+  return `${distance.toFixed(1)} km`;
+}
 
-  return (
-    <span className="text-yellow-400">
-      {"★".repeat(fullStars)}
-      {halfStar ? "½" : ""}
-      <span className="text-gray-300">
-        {"★".repeat(emptyStars)}
-      </span>
-    </span>
-  );
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
 }
 
 // Helper function to map API data to frontend format
-function mapApiProductToFrontend(apiProduct) {
+function mapApiProductToFrontend(apiProduct, vendorLat = null, vendorLon = null) {
+  const supplierLat = apiProduct.supplierId?.latitude;
+  const supplierLon = apiProduct.supplierId?.longitude;
+  
+  let distance = null;
+  if (vendorLat && vendorLon && supplierLat && supplierLon) {
+    distance = calculateDistance(vendorLat, vendorLon, supplierLat, supplierLon);
+  }
+  
   return {
     id: apiProduct._id,
     name: apiProduct.name,
     price: apiProduct.pricePerUnit,
     supplier: apiProduct.supplierId?.name || 'Unknown Supplier',
-    supplierId: apiProduct.supplierId?._id || apiProduct.supplierId, // Add supplierId
+    supplierId: apiProduct.supplierId?._id || apiProduct.supplierId,
+    supplierLat: supplierLat,
+    supplierLon: supplierLon,
     supplierPayment: {
       upiId: apiProduct.supplierId?.upiId || '',
       upiQrCode: apiProduct.supplierId?.upiQrCode || ''
     },
-    vendorId: apiProduct.vendorId || null, // Add vendorId if available
-    rating: 4.2, // Default rating since API doesn't provide this yet
-    ratingCount: Math.floor(Math.random() * 200) + 50, // Random count for demo
+    vendorId: apiProduct.vendorId || null,
+    distance: distance,
     image: apiProduct.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
-  address: apiProduct.supplierId?.address || "Location not specified",
-    delivery: "Pickup, Local Delivery", // Default delivery options
+    address: apiProduct.supplierId?.address || "Location not specified",
+    delivery: "Pickup, Local Delivery",
     phone: apiProduct.supplierId?.phone || "+91 98765 43210",
     verified: apiProduct.supplierId?.isVerified || false,
     inStock: apiProduct.stockQty,
@@ -92,10 +110,19 @@ function Home({ onAddToCart }) {
   const [searchTerm, setSearchTerm] = useState('');
   const { isAuthenticated, user } = useAuth();
   const [detailsOpen, setDetailsOpen] = useState({});
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [vendorLocation, setVendorLocation] = useState({ lat: null, lon: null });
 
   const toggleDetails = (id) => {
     setDetailsOpen(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Get vendor location on mount
+  useEffect(() => {
+    if (user && user.latitude && user.longitude) {
+      setVendorLocation({ lat: user.latitude, lon: user.longitude });
+    }
+  }, [user]);
 
   // Filter products based on search term
   useEffect(() => {
@@ -159,7 +186,9 @@ function Home({ onAddToCart }) {
           // eslint-disable-next-line no-console
           console.debug('Products API raw response:', response);
         }
-        const mappedProducts = response.map(mapApiProductToFrontend);
+        const vendorLat = user?.latitude || vendorLocation.lat;
+        const vendorLon = user?.longitude || vendorLocation.lon;
+        const mappedProducts = response.map(prod => mapApiProductToFrontend(prod, vendorLat, vendorLon));
         setProducts(mappedProducts);
         setFilteredProducts(mappedProducts);
       } catch (err) {
@@ -428,90 +457,185 @@ function Home({ onAddToCart }) {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center">
-            {filteredProducts.map((item) => {
-              return (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm w-full max-w-xs flex flex-col">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="rounded-t-lg w-full object-cover object-center h-40 sm:h-48"
-                  />
-                  <div className="p-4 sm:p-6 flex flex-col gap-2 flex-1">
-                    <h2 className="text-lg sm:text-xl font-semibold break-words">{getTranslatedField(item, 'name', language)}</h2>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-green-700 text-xl sm:text-2xl font-bold">
-                        ₹{item.price} / {item.unit}
-                      </div>
-                      {item.verified && (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 border border-green-200 text-green-700 px-2 py-0.5 rounded-full text-xs" title={t('verified') || 'Verified'}>
-                            <FaCheck className="w-3 h-3" />
-                            {t('verified') || 'Verified'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-gray-700 font-medium break-words">{getTranslatedField(item, 'supplier', language)}</div>
-                    <div className="text-xs text-gray-500">{getTranslatedField(item, 'address', language)}</div>
-                    <div className="flex items-center gap-1">
-                      <RatingStars value={item.rating} />
-                      <span className="text-gray-500 text-xs">({item.ratingCount})</span>
-                    </div>
-
-                    <hr className="my-1" />
-
-                    {/* Condensed details with toggle for vendors */}
-                    {detailsOpen[item.id] ? (
-                      <div className="space-y-2 text-gray-600 text-xs">
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 12.414a4 4 0 10-5.657 5.657l4.243 4.243a8 8 0 1011.314-11.314l-4.243 4.243z" /></svg>
-                          {getTranslatedField(item, 'address', language)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-9 4v8" /></svg>
-                          {item.delivery}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h2l.4 2M7 13h10l1.4-7H6.6M7 13l-1.4 7h10.8L17 13M7 13V5a2 2 0 012-2h6a2 2 0 012 2v8" /></svg>
-                          {item.phone}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-gray-600 text-xs">{item.description ? item.description.slice(0, 80) + (item.description.length > 80 ? '...' : '') : ''}</div>
-                    )}
-
-                    <div className="flex items-center justify-between gap-2 mt-3">
-                      <div className="text-green-700 font-semibold text-sm">{item.inStock} {item.unit} {t('inStock')}</div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleAddToCart(item)}
-                          className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 font-semibold shadow transition duration-150 cursor-pointer min-w-[120px]"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l1.4-7H6.6M7 13l-1.4 7h10.8L17 13M7 13V5a2 2 0 012-2h6a2 2 0 012 2v8" /></svg>
-                          {t('addToCart')}
-                        </button>
-                        <button
-                          onClick={() => toggleDetails(item.id)}
-                          className="bg-gray-200 px-3 py-1.5 rounded-lg text-xs"
-                        >
-                          {detailsOpen[item.id] ? (language === 'hi' ? 'छुपाएँ' : 'Hide') : (language === 'hi' ? 'विवरण' : 'Details')}
-                        </button>
-                        {item.isBundle && (
-                          <button
-                            onClick={() => window.location.href = `/bundle/${item.id}`}
-                            className="ml-1 bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded-lg"
-                          >
-                            {t('viewBundle') || 'View Bundle'}
-                          </button>
+          <div className="px-4 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredProducts.map((item) => {
+                return (
+                  <div 
+                    key={item.id} 
+                    onClick={() => setSelectedProduct(item)}
+                    className="bg-white rounded-2xl shadow-sm flex flex-col cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 overflow-hidden"
+                  >
+                    {/* Image Section - Top (padded, 3:4 aspect ratio) */}
+                    <div className="relative w-full flex-shrink-0 p-3">
+                      <div className="relative w-full" style={{ aspectRatio: '4 / 3' }}>
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="absolute inset-0 w-full h-full object-cover object-center rounded-2xl"
+                        />
+                        {item.verified && (
+                          <div className="absolute top-2 left-2 bg-gray-700 bg-opacity-75 text-white px-2 py-1 rounded text-xs font-medium">
+                            Verified
+                          </div>
                         )}
                       </div>
                     </div>
+                    
+                    {/* Content Section - Bottom */}
+                    <div className="p-3 flex flex-col gap-1 flex-1">
+                      {/* Item Name */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h2 className="text-base font-bold break-words flex-1">
+                          {getTranslatedField(item, 'name', language)}
+                        </h2>
+                      </div>
+                      
+                      {/* Category/Supplier */}
+                      <div className="text-sm text-gray-600 break-words truncate">
+                        {getTranslatedField(item, 'supplier', language)}
+                      </div>
+                      
+                      {/* Price and Distance */}
+                      <div className="flex justify-between items-baseline mt-1">
+                        <div className="text-green-700 font-bold text-base">
+                          ₹{item.price} / {item.unit}
+                        </div>
+                        {item.distance !== null && item.distance !== undefined && (
+                          <div className="text-xs text-gray-600 font-medium">
+                            {formatDistance(item.distance)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Location */}
+                      <div className="text-xs text-gray-600 truncate">
+                        {getTranslatedField(item, 'address', language)}
+                      </div>
+                      
+                      {/* Stock */}
+                      <div className="text-xs text-gray-500">
+                        {item.inStock} {item.unit} in stock
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        
+        {/* Overlay Modal */}
+        {selectedProduct && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedProduct(null)}
+          >
+            <div 
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                {/* Close Button */}
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                {/* Image */}
+                <img
+                  src={selectedProduct.image}
+                  alt={selectedProduct.name}
+                  className="w-full h-64 object-cover rounded-t-2xl"
+                />
+              </div>
+              
+              <div className="p-6 space-y-4">
+                {/* Item Name */}
+                <h2 className="text-2xl font-bold">{getTranslatedField(selectedProduct, 'name', language)}</h2>
+                
+                {/* Supplier Info */}
+                <div className="space-y-2">
+                  <div className="text-gray-700 font-medium">
+                    Supplier: {getTranslatedField(selectedProduct, 'supplier', language)}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Location: {getTranslatedField(selectedProduct, 'address', language)}
+                  </div>
+                  {selectedProduct.supplierLat && selectedProduct.supplierLon && (
+                    <div className="text-sm text-gray-600">
+                      Coordinates: {selectedProduct.supplierLat.toFixed(6)}, {selectedProduct.supplierLon.toFixed(6)}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Distance Info */}
+                {selectedProduct.distance !== null && selectedProduct.distance !== undefined ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="text-lg font-semibold text-green-700">
+                      Distance: {formatDistance(selectedProduct.distance)}
+                    </div>
+                    {user && user.latitude && user.longitude && (
+                      <div className="text-xs text-gray-600 mt-1">
+                        From your location ({user.latitude.toFixed(4)}, {user.longitude.toFixed(4)})
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="text-sm text-yellow-700">
+                      Distance calculation unavailable. Please ensure both vendor and supplier have location data.
+                    </div>
+                  </div>
+                )}
+                
+                {/* Price and Stock */}
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div>
+                    <div className="text-2xl font-bold text-green-700">
+                      ₹{selectedProduct.price} / {selectedProduct.unit}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {selectedProduct.inStock} {selectedProduct.unit} in stock
+                    </div>
                   </div>
                 </div>
-              )
-            })}
+                
+                {/* Description */}
+                {selectedProduct.description && (
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Description</h3>
+                    <p className="text-gray-600 text-sm">{selectedProduct.description}</p>
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <button 
+                    onClick={() => {
+                      handleAddToCart(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l1.4-7H6.6M7 13l-1.4 7h10.8L17 13M7 13V5a2 2 0 012-2h6a2 2 0 012 2v8" />
+                    </svg>
+                    {t('addToCart')}
+                  </button>
+                  <button
+                    onClick={() => setSelectedProduct(null)}
+                    className="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg font-semibold transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
