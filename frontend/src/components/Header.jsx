@@ -196,9 +196,14 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50 py-1">
-                    <div className="px-4 py-2 border-b text-sm text-gray-700 flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Welcome</span>
-                      <span className="font-medium truncate">{user.name}</span>
+                    <div className="px-4 py-2 border-b">
+                      <div className="text-sm text-gray-700 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Welcome</span>
+                        <span className="font-medium truncate">{user.name}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 truncate">
+                        ID: {user._id || user.id}
+                      </div>
                     </div>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
