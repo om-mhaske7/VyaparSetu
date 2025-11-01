@@ -598,6 +598,110 @@ export const bundleAPI = {
     if (!response.ok) throw new Error(await response.text());
     return response.json();
   },
+  update: async (bundleId, bundleData) => {
+    if (!bundleId) {
+      throw new Error('Bundle ID is required');
+    }
+    if (typeof bundleId !== 'string' && typeof bundleId !== 'number') {
+      throw new Error('Bundle ID must be a string or number');
+    }
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    const headers = { 
+      'Content-Type': 'application/json', 
+      Authorization: `Bearer ${token}` 
+    };
+    // Ensure bundleId is a string and URL-encode it
+    const bundleIdStr = String(bundleId).trim();
+    if (!bundleIdStr || bundleIdStr === 'undefined' || bundleIdStr === 'null') {
+      throw new Error('Invalid bundle ID provided');
+    }
+    const url = `${API_BASE_URL}/bundles/${encodeURIComponent(bundleIdStr)}`;
+    console.log('Updating bundle at:', url, 'Bundle ID:', bundleIdStr);
+    
+    try {
+      const response = await fetch(url, {
+        method: 'PUT', 
+        headers, 
+        body: JSON.stringify(bundleData), 
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        // Read response body only once
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: `;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage += errorData.message || errorData.error || 'Update failed';
+        } catch {
+          errorMessage += errorText || 'Update failed';
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Bundle update error:', error);
+      throw error;
+    }
+  },
+  delete: async (bundleId) => {
+    if (!bundleId) {
+      throw new Error('Bundle ID is required');
+    }
+    if (typeof bundleId !== 'string' && typeof bundleId !== 'number') {
+      throw new Error('Bundle ID must be a string or number');
+    }
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    const headers = { 
+      'Content-Type': 'application/json', 
+      Authorization: `Bearer ${token}` 
+    };
+    // Ensure bundleId is a string and URL-encode it
+    const bundleIdStr = String(bundleId).trim();
+    if (!bundleIdStr || bundleIdStr === 'undefined' || bundleIdStr === 'null') {
+      throw new Error('Invalid bundle ID provided');
+    }
+    const url = `${API_BASE_URL}/bundles/${encodeURIComponent(bundleIdStr)}`;
+    console.log('Deleting bundle at:', url, 'Bundle ID:', bundleIdStr);
+    
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE', 
+        headers, 
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        // Read response body only once
+        const errorText = await response.text();
+        let errorMessage = `HTTP ${response.status}: `;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage += errorData.message || errorData.error || 'Delete failed';
+        } catch {
+          errorMessage += errorText || 'Delete failed';
+        }
+        throw new Error(errorMessage);
+      }
+      
+      // Handle empty response body for DELETE
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      return { message: 'Bundle deleted successfully' };
+    } catch (error) {
+      console.error('Bundle delete error:', error);
+      throw error;
+    }
+  },
   publicList: async () => {
     const response = await fetch(`${API_BASE_URL}/bundles/public`, { method: 'GET', mode: 'cors' });
     if (!response.ok) throw new Error(await response.text());

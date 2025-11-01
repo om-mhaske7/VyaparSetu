@@ -15,6 +15,7 @@ import Settings from "./components/Settings.jsx";
 import BundlesList from "./components/BundlesList.jsx";
 import BundleDetail from "./components/BundleDetail.jsx";
 import SupplierSearch from "./components/SupplierSearch.jsx";
+//import Chat from "./components/Chat";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -131,6 +132,14 @@ function App() {
               </RoleRoute>
             } 
           />
+          {/* <Route 
+            path="/chat" 
+            element={
+              <RoleRoute allowedRoles={['vendor', 'supplier']}>
+                <Chat />
+              </RoleRoute>
+            } 
+          /> */}
         </Routes>
         {showCart && (
           <CartOrdersModal

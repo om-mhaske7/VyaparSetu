@@ -25,6 +25,7 @@ const bundleSchema = new mongoose.Schema({
   // revenue share removed per requirements; suppliers can decide offline
   upiId: { type: String, default: "" },
   upiQrCode: { type: String, default: "" },
+  paymentMethods: [{ type: String, enum: ["COD", "UPI"] }],
   status: { type: String, enum: ["draft", "pending", "active", "archived"], default: "draft" },
   totalOrders: { type: Number, default: 0 },
   avgRating: { type: Number, default: 0 },

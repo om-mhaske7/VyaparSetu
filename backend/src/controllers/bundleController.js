@@ -9,24 +9,37 @@ exports.createBundle = async (req, res) => {
       return res.status(403).json({ message: 'Suppliers only' });
     }
 
-    const { name, description, totalPrice, ingredients, upiId, upiQrCode, collaborators } = req.body;
+    const { name, description, totalPrice, ingredients, upiId, upiQrCode, collaborators, paymentMethods } = req.body;
     if (!name || totalPrice === undefined || !Array.isArray(ingredients) || ingredients.length === 0) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Normalize inputs
-    const normalizedIngredients = ingredients.map((ing) => ({
-      productName: (ing.productName || '').toString().trim(),
-      supplierName: (ing.supplierName || '').toString().trim(),
-      price: Number(ing.price || 0),
-      quantity: Number(ing.quantity || 1),
-      // keep optional refs if provided
-      productId: ing.productId || undefined,
-      supplierId: ing.supplierId || undefined,
-    })).filter(ing => ing.productName && ing.supplierName);
+    // Normalize inputs - support both productId references and product names
+    const normalizedIngredients = ingredients.map((ing) => {
+      const normalized = {
+        price: Number(ing.price || 0),
+        quantity: Number(ing.quantity || 1),
+      };
+      
+      // If productId is provided, use it (preferred for inventory items)
+      if (ing.productId) {
+        normalized.productId = ing.productId;
+      }
+      
+      // Always include productName for display purposes
+      normalized.productName = (ing.productName || '').toString().trim();
+      
+      // Supplier ID - use provided or default to creator
+      normalized.supplierId = ing.supplierId || creatorSupplierId;
+      
+      // Supplier name for display
+      normalized.supplierName = (ing.supplierName || '').toString().trim() || req.user?.name || 'Supplier';
+      
+      return normalized;
+    }).filter(ing => ing.productId || ing.productName); // Require either productId or productName
 
     if (normalizedIngredients.length === 0) {
-      return res.status(400).json({ message: 'At least one ingredient with names is required' });
+      return res.status(400).json({ message: 'At least one item is required in the bundle' });
     }
 
     const normalizedTotalPrice = Number(totalPrice);
@@ -43,6 +56,7 @@ exports.createBundle = async (req, res) => {
       collaborators: Array.isArray(collaborators) ? collaborators.filter(Boolean) : [],
       upiId: upiId || '',
       upiQrCode: upiQrCode || '',
+      paymentMethods: Array.isArray(paymentMethods) ? paymentMethods.filter(pm => ['COD', 'UPI'].includes(pm)) : [],
       status: collaborators && collaborators.length > 0 ? 'pending' : 'active',
     });
 
@@ -73,7 +87,9 @@ exports.getMyBundles = async (req, res) => {
         { creatorSupplierId: supplierId },
         { collaborators: supplierId }
       ]
-    }).sort({ updatedAt: -1 });
+    })
+      .populate('creatorSupplierId', 'name email phone')
+      .sort({ updatedAt: -1 });
     res.json(bundles);
   } catch (err) {
     console.error('getMyBundles error:', err);
@@ -86,7 +102,7 @@ exports.respondInvite = async (req, res) => {
     if (!req.user || req.user.role !== 'supplier') {
       return res.status(403).json({ message: 'Suppliers only' });
     }
-    const { bundleId } = req.params;
+    const bundleId = req.params.bundleId || req.params.id;
     const { accept } = req.body;
     const supplierId = req.user.id;
 
@@ -120,7 +136,7 @@ exports.addMessage = async (req, res) => {
     if (!req.user || req.user.role !== 'supplier') {
       return res.status(403).json({ message: 'Suppliers only' });
     }
-    const { bundleId } = req.params;
+    const bundleId = req.params.bundleId || req.params.id;
     const { toSupplierId, content } = req.body;
     const fromSupplierId = req.user.id;
     if (!toSupplierId || !content) return res.status(400).json({ message: 'Missing fields' });
@@ -135,7 +151,7 @@ exports.addMessage = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { bundleId } = req.params;
+    const bundleId = req.params.bundleId || req.params.id;
     const msgs = await Message.find({ bundleId }).sort({ createdAt: 1 });
     res.json(msgs);
   } catch (err) {
@@ -146,7 +162,10 @@ exports.getMessages = async (req, res) => {
 
 exports.getPublicBundles = async (req, res) => {
   try {
-    const bundles = await Bundle.find({ status: 'active' }).sort({ updatedAt: -1 });
+    // Get active bundles and populate creator supplier info for display
+    const bundles = await Bundle.find({ status: 'active' })
+      .populate('creatorSupplierId', 'name email phone address latitude longitude isVerified')
+      .sort({ updatedAt: -1 });
     res.json(bundles);
   } catch (err) {
     console.error('getPublicBundles error:', err);
@@ -163,6 +182,103 @@ exports.getBundleById = async (req, res) => {
   } catch (err) {
     console.error('getBundleById error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.updateBundle = async (req, res) => {
+  try {
+    const creatorSupplierId = req.user?.id;
+    if (!creatorSupplierId || req.user.role !== 'supplier') {
+      return res.status(403).json({ message: 'Suppliers only' });
+    }
+
+    const { id } = req.params;
+    console.log('Update bundle request - ID:', id, 'User:', creatorSupplierId);
+    
+    if (!id) {
+      return res.status(400).json({ message: 'Bundle ID is required' });
+    }
+
+    const bundle = await Bundle.findById(id);
+    if (!bundle) {
+      console.log('Bundle not found:', id);
+      return res.status(404).json({ message: 'Bundle not found' });
+    }
+
+    // Only creator can update
+    if (String(bundle.creatorSupplierId) !== String(creatorSupplierId)) {
+      return res.status(403).json({ message: 'Only bundle creator can update' });
+    }
+    
+    console.log('Updating bundle:', bundle.name, 'with data:', req.body);
+
+    const { name, description, totalPrice, ingredients, upiId, paymentMethods } = req.body;
+
+    // Normalize ingredients if provided
+    let normalizedIngredients = bundle.ingredients;
+    if (Array.isArray(ingredients) && ingredients.length > 0) {
+      normalizedIngredients = ingredients.map((ing) => {
+        const normalized = {
+          price: Number(ing.price || 0),
+          quantity: Number(ing.quantity || 1),
+        };
+        
+        if (ing.productId) {
+          normalized.productId = ing.productId;
+        }
+        
+        normalized.productName = (ing.productName || '').toString().trim();
+        normalized.supplierId = ing.supplierId || creatorSupplierId;
+        normalized.supplierName = (ing.supplierName || '').toString().trim() || req.user?.name || 'Supplier';
+        
+        return normalized;
+      }).filter(ing => ing.productId || ing.productName);
+    }
+
+    // Update bundle
+    bundle.name = name || bundle.name;
+    bundle.description = description !== undefined ? description : bundle.description;
+    bundle.totalPrice = totalPrice !== undefined ? Number(totalPrice) : bundle.totalPrice;
+    bundle.ingredients = normalizedIngredients;
+    bundle.upiId = upiId !== undefined ? upiId : bundle.upiId;
+    bundle.paymentMethods = Array.isArray(paymentMethods) 
+      ? paymentMethods.filter(pm => ['COD', 'UPI'].includes(pm))
+      : bundle.paymentMethods;
+    bundle.updatedAt = new Date();
+
+    await bundle.save();
+
+    res.json(bundle);
+  } catch (err) {
+    console.error('updateBundle error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.deleteBundle = async (req, res) => {
+  try {
+    const creatorSupplierId = req.user?.id;
+    if (!creatorSupplierId || req.user.role !== 'supplier') {
+      return res.status(403).json({ message: 'Suppliers only' });
+    }
+
+    const { id } = req.params;
+    const bundle = await Bundle.findById(id);
+    if (!bundle) {
+      return res.status(404).json({ message: 'Bundle not found' });
+    }
+
+    // Only creator can delete
+    if (String(bundle.creatorSupplierId) !== String(creatorSupplierId)) {
+      return res.status(403).json({ message: 'Only bundle creator can delete' });
+    }
+
+    await Bundle.findByIdAndDelete(id);
+
+    res.json({ message: 'Bundle deleted successfully' });
+  } catch (err) {
+    console.error('deleteBundle error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 

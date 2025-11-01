@@ -84,11 +84,13 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
     { label: t('Home') || 'Home', path: '/home' },
     { label: t('Trending') || 'Trending', path: '/trending' },
     { label: t('Suppliers') || 'Suppliers', path: '/search' },
+    //{ label: t('Chat') || 'Chat', path: '/chat' }, // Add this line
   ];
   const supplierNav = [
     { label: t('Dashboard') || 'Dashboard', path: '/supplier' },
     { label: t('Analytics') || 'Analytics', path: '/analyze' },
     { label: t('Maps') || 'Maps', path: '/maps' },
+    //{ label: t('Chat') || 'Chat', path: '/chat' }, // Add this line
   ];
   const navItems = user?.role === 'vendor' ? vendorNav : user?.role === 'supplier' ? supplierNav : [];
 
