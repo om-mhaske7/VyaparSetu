@@ -4,6 +4,14 @@ import { authAPI, tokenManager } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import MapPicker from "./MapPicker";
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePhone, 
+  validateName, 
+  validateAddress,
+  cleanPhoneNumber
+} from "../utils/validations";
 
 const roles = ["vendor", "supplier"];
 
@@ -20,6 +28,7 @@ const Login = ({ onSuccess, onClose }) => {
   const [address, setAddress] = useState("");
   const [role, setRole] = useState(roles[0]);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
   const [location, setLocation] = useState(null);
@@ -30,10 +39,21 @@ const Login = ({ onSuccess, onClose }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!loginId || !loginPassword) {
-      setError(t("enterEmailPassword"));
+    
+    // Validate inputs
+    const emailValidation = validateEmail(loginId);
+    const passwordValidation = validatePassword(loginPassword);
+    
+    const errors = {};
+    if (!emailValidation.isValid) errors.loginId = emailValidation.message;
+    if (!passwordValidation.isValid) errors.loginPassword = passwordValidation.message;
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    
+    setFieldErrors({});
     setIsLoading(true);
     setError("");
     try {
@@ -67,14 +87,32 @@ const Login = ({ onSuccess, onClose }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!name || !email || !signupPassword || !phone || !role || !address) {
-      setError(t("fillAllFields"));
+    
+    // Validate all inputs
+    const nameValidation = validateName(name);
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(signupPassword);
+    const phoneValidation = validatePhone(phone);
+    const addressValidation = validateAddress(address);
+    
+    const errors = {};
+    if (!nameValidation.isValid) errors.name = nameValidation.message;
+    if (!emailValidation.isValid) errors.email = emailValidation.message;
+    if (!passwordValidation.isValid) errors.signupPassword = passwordValidation.message;
+    if (!phoneValidation.isValid) errors.phone = phoneValidation.message;
+    if (!addressValidation.isValid) errors.address = addressValidation.message;
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    
     if (!location) {
       setError("Please select your location on the map");
       return;
     }
+    
+    setFieldErrors({});
     setIsLoading(true);
     setError("");
     try {
@@ -82,7 +120,7 @@ const Login = ({ onSuccess, onClose }) => {
         name,
         email,
         password: signupPassword,
-        phone,
+        phone: cleanPhoneNumber(phone),
         role,
         address,
         latitude: location[0],
@@ -109,6 +147,16 @@ const Login = ({ onSuccess, onClose }) => {
       setError(err.message || t("signupFailed"));
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Phone change handler to clean the input
+  const handlePhoneChange = (e) => {
+    const cleaned = cleanPhoneNumber(e.target.value);
+    setPhone(cleaned);
+    // Clear error when user starts typing
+    if (fieldErrors.phone) {
+      setFieldErrors(prev => ({ ...prev, phone: undefined }));
     }
   };
 
@@ -194,42 +242,78 @@ const Login = ({ onSuccess, onClose }) => {
                 <h2 className="text-lg font-bold mb-2 text-green-700 text-center tracking-wide">
                   {t("createAccount")}
                 </h2>
-                <form onSubmit={handleSignup} className="flex flex-col gap-4 mt-2">
-                  <input
-                    type="text"
-                    placeholder={t("Owner name")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <input
-                    type="email"
-                    placeholder={t("Business email")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <input
-                    type="password"
-                    placeholder={t("password")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                  />
-                  <input
-                    type="tel"
-                    placeholder={t("Business phone number")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder={t("Business address")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
+                <form onSubmit={handleSignup} className="flex flex-col gap-2 mt-2">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder={t("Owner name")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.name ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (fieldErrors.name) {
+                          setFieldErrors(prev => ({ ...prev, name: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.name && <div className="text-red-500 text-xs mt-1">{fieldErrors.name}</div>}
+                  </div>
+                  <div>
+                    <input
+                      type="email"
+                      placeholder={t("Business email")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.email ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (fieldErrors.email) {
+                          setFieldErrors(prev => ({ ...prev, email: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.email && <div className="text-red-500 text-xs mt-1">{fieldErrors.email}</div>}
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      placeholder={t("password")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.signupPassword ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={signupPassword}
+                      onChange={(e) => {
+                        setSignupPassword(e.target.value);
+                        if (fieldErrors.signupPassword) {
+                          setFieldErrors(prev => ({ ...prev, signupPassword: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.signupPassword && <div className="text-red-500 text-xs mt-1">{fieldErrors.signupPassword}</div>}
+                  </div>
+                  <div>
+                    <input
+                      type="tel"
+                      placeholder={t("Business phone number")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.phone ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      maxLength="10"
+                    />
+                    {fieldErrors.phone && <div className="text-red-500 text-xs mt-1">{fieldErrors.phone}</div>}
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder={t("Business address")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.address ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        if (fieldErrors.address) {
+                          setFieldErrors(prev => ({ ...prev, address: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.address && <div className="text-red-500 text-xs mt-1">{fieldErrors.address}</div>}
+                  </div>
                   <MapPicker
                     onLocationSelect={handleLocationSelect}
                     initialLocation={location}
@@ -281,21 +365,37 @@ const Login = ({ onSuccess, onClose }) => {
                 <h2 className="text-lg font-bold mb-2 text-green-700 text-center tracking-wide">
                   {t("welcomeBack")}
                 </h2>
-                <form onSubmit={handleLogin} className="flex flex-col gap-4 mt-2">
-                  <input
-                    type="text"
-                    placeholder={t("email")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={loginId}
-                    onChange={(e) => setLoginId(e.target.value)}
-                  />
-                  <input
-                    type="password"
-                    placeholder={t("password")}
-                    className="border border-green-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                  />
+                <form onSubmit={handleLogin} className="flex flex-col gap-2 mt-2">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder={t("email")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.loginId ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={loginId}
+                      onChange={(e) => {
+                        setLoginId(e.target.value);
+                        if (fieldErrors.loginId) {
+                          setFieldErrors(prev => ({ ...prev, loginId: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.loginId && <div className="text-red-500 text-xs mt-1">{fieldErrors.loginId}</div>}
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      placeholder={t("password")}
+                      className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 transition ${fieldErrors.loginPassword ? 'border-red-500 focus:ring-red-300' : 'border-green-200 focus:ring-green-300'}`}
+                      value={loginPassword}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                        if (fieldErrors.loginPassword) {
+                          setFieldErrors(prev => ({ ...prev, loginPassword: undefined }));
+                        }
+                      }}
+                    />
+                    {fieldErrors.loginPassword && <div className="text-red-500 text-xs mt-1">{fieldErrors.loginPassword}</div>}
+                  </div>
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"

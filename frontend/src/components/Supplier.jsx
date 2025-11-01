@@ -10,7 +10,8 @@ import Bundles from "./Supplier/Bundles";
 import Toast from "./Supplier/Toast";
 import { useAuth } from "../context/AuthContext";
 import { tokenManager, productAPI, orderAPI } from "../services/api";
-import { getVerificationStatusById } from "../services/userServices"; 
+import { getVerificationStatusById } from "../services/userServices";
+import { validateProductName, validateDescription, validatePrice, validateStockQuantity } from "../utils/validations"; 
 
 
 const Supplier = () => {
@@ -268,9 +269,22 @@ const Supplier = () => {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    // Basic validation
-    if (!form.name || !form.description || !form.pricePerUnit || !form.stockQty || !form.unit) {
-      setShowToast({ type: "error", message: "Please fill all required fields." });
+    
+    // Validate all inputs
+    const nameValidation = validateProductName(form.name);
+    const descValidation = validateDescription(form.description, 10);
+    const priceValidation = validatePrice(form.pricePerUnit);
+    const stockValidation = validateStockQuantity(form.stockQty);
+    
+    // Check for validation errors
+    const errors = [];
+    if (!nameValidation.isValid) errors.push(nameValidation.message);
+    if (!descValidation.isValid) errors.push(descValidation.message);
+    if (!priceValidation.isValid) errors.push(priceValidation.message);
+    if (!stockValidation.isValid) errors.push(stockValidation.message);
+    
+    if (errors.length > 0) {
+      setShowToast({ type: "error", message: errors[0] }); // Show first error
       return;
     }
 
