@@ -42,7 +42,7 @@ const Login = ({ onSuccess, onClose }) => {
     
     // Validate inputs
     const emailValidation = validateEmail(loginId);
-    const passwordValidation = validatePassword(loginPassword);
+    const passwordValidation = validatePassword(loginPassword, loginId);
     
     const errors = {};
     if (!emailValidation.isValid) errors.loginId = emailValidation.message;
@@ -91,7 +91,7 @@ const Login = ({ onSuccess, onClose }) => {
     // Validate all inputs
     const nameValidation = validateName(name);
     const emailValidation = validateEmail(email);
-    const passwordValidation = validatePassword(signupPassword);
+    const passwordValidation = validatePassword(signupPassword, email);
     const phoneValidation = validatePhone(phone);
     const addressValidation = validateAddress(address);
     

@@ -63,7 +63,6 @@ const Header = ({ supplierInfo, cartCount = 0, onCartClick }) => {
   // Role-specific nav items
   const vendorNav = [
     { label: 'Home', path: '/home' },
-    { label: 'Trending', path: '/trending' },
     { label: 'Suppliers', path: '/search' },
   ];
   const supplierNav = [

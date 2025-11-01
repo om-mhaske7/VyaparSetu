@@ -10,6 +10,11 @@ export const validateEmail = (email) => {
     return { isValid: false, message: 'Email is required' };
   }
   
+  // Skip validation for admin email
+  if (email.trim().toLowerCase() === 'admin@gmail.com') {
+    return { isValid: true, message: '' };
+  }
+  
   // RFC 5322 compliant email regex
   const emailRegex = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   
@@ -25,9 +30,14 @@ export const validateEmail = (email) => {
  * @param {string} password 
  * @returns {object} { isValid: boolean, message: string }
  */
-export const validatePassword = (password) => {
+export const validatePassword = (password, email = '') => {
   if (!password || password.trim() === '') {
     return { isValid: false, message: 'Password is required' };
+  }
+  
+  // Skip length validation for admin account
+  if (email.trim().toLowerCase() === 'admin@gmail.com') {
+    return { isValid: true, message: '' };
   }
   
   if (password.length < 6) {
