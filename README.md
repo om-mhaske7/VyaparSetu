@@ -1,4 +1,4 @@
-# 🛒 VendorMitra – The Micro-Entrepreneur’s B2B Marketplace
+# 🛒 VyaparSetu – The Micro-Entrepreneur’s B2B Marketplace
 ---
 
 <p align="center">
@@ -126,4 +126,4 @@ password: anoop123
 
 ## 🤝 Contributing
 
-Pull requests and forks welcome! Let’s build VendorMitra together.
+Pull requests and forks welcome! Let’s build VyaparSetu together.
