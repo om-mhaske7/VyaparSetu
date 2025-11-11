@@ -94,22 +94,23 @@
 ## 🚀 Quick Start (for Developers)
 
 1. **Clone the repo**
-   git clone [[https://github.com/your-username/vendor-mitra](https://github.com/om-mhaske7/VyaparSetu).git](https://github.com/om-mhaske7/VyaparSetu.git)
+
+   git clone https://github.com/om-mhaske7/VyaparSetu.git <br>
    cd vendor-mitra
 
 
 2. **Start Backend**
 
-   cd backend
-   npm install
+   cd backend <br>
+   npm install <br>
    npm run dev
  
 
 3. **Start Frontend**
 
 
-   cd frontend
-   npm install
+   cd frontend <br>
+   npm install <br>
    npm start
 
 
@@ -123,14 +124,6 @@ gmail: anoop@gamil.com
 password: anoop123
 
 
----
-
 ## 🤝 Contributing
 
 Pull requests and forks welcome! Let’s build VendorMitra together.
-
-
-<p align="center">
-  <strong>Made with ❤️ at a 48-hour hackathon to empower India’s street entrepreneurs.</strong>
-</p>
-```
