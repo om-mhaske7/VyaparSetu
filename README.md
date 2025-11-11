@@ -100,7 +100,7 @@
 ## 🚀 Quick Start (for Developers)
 
 1. **Clone the repo**
-   git clone https://github.com/your-username/vendor-mitra.git
+   git clone [https://github.com/your-username/vendor-mitra](https://github.com/om-mhaske7/VyaparSetu).git
    cd vendor-mitra
 
 
