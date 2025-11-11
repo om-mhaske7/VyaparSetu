@@ -21,13 +21,17 @@
 
 ### 🧑‍🍳 Vendor Dashboard
 - 🔐 Login/Signup
+  <img width="1397" height="819" alt="image" src="https://github.com/user-attachments/assets/e7676dc3-1404-4942-bcbb-59414d71d588" />
+
 - 🧺 Browse raw material bundles (e.g., “Chaat Stall Bundle”)
 - 📦 Place quantity-based orders
 - 🌟 View supplier ratings and delivery modes
+<img width="1884" height="866" alt="image" src="https://github.com/user-attachments/assets/d6d1b94a-f911-4b5a-8722-1adec4378d66" />
+<img width="918" height="789" alt="image" src="https://github.com/user-attachments/assets/e06e6a8d-f17d-4d16-ba25-1b306b2a5f99" />
+<img width="1902" height="876" alt="image" src="https://github.com/user-attachments/assets/67a8d2d5-b722-4fcb-8f55-e0bd9b7b367a" />
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/b4ede413-5d23-4185-961d-29634157f8f0" alt="Vendor Dashboard" width="500"/>
-</p>
+
+
 
 ---
 
@@ -37,9 +41,8 @@
 - 📤 Mark dispatch status
 - 🏷️ Earn “Verified” badge on KYC
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/f32bbc2a-f69a-4e85-a5f7-3938cd0b0798" alt="Supplier Dashboard" width="500"/>
-</p>
+<img width="1892" height="865" alt="image" src="https://github.com/user-attachments/assets/d236e085-81c8-4b27-b78a-dbe32d33caa4" />
+
 
 ---
 
