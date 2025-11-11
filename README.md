@@ -55,12 +55,6 @@
   <img src="https://github.com/user-attachments/assets/f1868ad2-10c5-4547-b7ec-e4cbf8f5ee54" alt="Supplier Dashboard" width="500"/>
 </p>
 ---
-### 📸 Orders
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/dfec36c8-251e-46d1-bc09-6b9c8b38b925" alt="App Flow" width="600"/>
-</p>
-
 
 ### ✅ Trust Mechanism
 - ⭐ Vendor reviews (1–5 stars + comment)
@@ -100,7 +94,7 @@
 ## 🚀 Quick Start (for Developers)
 
 1. **Clone the repo**
-   git clone [https://github.com/your-username/vendor-mitra](https://github.com/om-mhaske7/VyaparSetu).git
+   git clone [[https://github.com/your-username/vendor-mitra](https://github.com/om-mhaske7/VyaparSetu).git](https://github.com/om-mhaske7/VyaparSetu.git)
    cd vendor-mitra
 
 
@@ -117,6 +111,16 @@
    cd frontend
    npm install
    npm start
+
+
+4. login details:
+vendor: 
+gmail: v@gmail.com
+password: vendor123
+
+supplier: 
+gmail: anoop@gamil.com
+password: anoop123
 
 
 ---
